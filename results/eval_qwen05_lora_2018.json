@@ -1,0 +1,373 @@
+{
+  "measured": true,
+  "complete": true,
+  "tag": "qwen05_lora_2018",
+  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+  "adapter_dir": "results/adapters",
+  "use_adapter": true,
+  "shots": 0,
+  "folds": [
+    2018
+  ],
+  "ranking": "mean_token_logprob",
+  "secondary_ranking": "sum_token_logprob",
+  "dtype": "float32",
+  "max_eval": 0,
+  "seed": 0,
+  "n_scored": 3387,
+  "n_label_not_in_candidates": 0,
+  "metrics": {
+    "n": 3387,
+    "top1": 0.5893120755831119,
+    "top1_ci": [
+      0.5718925302627694,
+      0.6046648951874816
+    ],
+    "top3": 0.8021848243283142,
+    "top3_ci": [
+      0.7886034839090641,
+      0.8160614112784175
+    ],
+    "n_seen_merchants": 2563,
+    "n_new_merchants": 824,
+    "top1_seen_merchants": 0.6726492391728444,
+    "top1_seen_ci": [
+      0.6543113538821693,
+      0.6909871244635193
+    ],
+    "top1_new_merchants": 0.3300970873786408,
+    "top1_new_ci": [
+      0.29975728155339804,
+      0.3640776699029126
+    ],
+    "top3_seen_merchants": 0.8778774873195474,
+    "top3_new_merchants": 0.566747572815534,
+    "top3_new_ci": [
+      0.532736650485437,
+      0.5995145631067961
+    ],
+    "macro_f1": 0.3068374107381831
+  },
+  "metrics_sum_logprob": {
+    "n": 3387,
+    "top1": 0.5934455270150576,
+    "top1_ci": [
+      0.5760186005314437,
+      0.6087983466194272
+    ],
+    "top3": 0.806613522291113,
+    "top3_ci": [
+      0.7924416888101565,
+      0.8198996161795099
+    ],
+    "n_seen_merchants": 2563,
+    "n_new_merchants": 824,
+    "top1_seen_merchants": 0.6726492391728444,
+    "top1_seen_ci": [
+      0.6543113538821693,
+      0.6913772922356614
+    ],
+    "top1_new_merchants": 0.3470873786407767,
+    "top1_new_ci": [
+      0.3155339805825243,
+      0.38106796116504854
+    ],
+    "top3_seen_merchants": 0.8724151385095591,
+    "top3_new_merchants": 0.6019417475728155,
+    "top3_new_ci": [
+      0.5691747572815534,
+      0.6359223300970874
+    ],
+    "macro_f1": 0.32288609414947955
+  },
+  "paired_merchant_lookup": {
+    "n": 3387,
+    "top1": 0.5686448184233835,
+    "top1_ci": [
+      0.551225273103041,
+      0.5845881310894597
+    ],
+    "top3": null,
+    "top3_ci": null,
+    "n_seen_merchants": 2563,
+    "n_new_merchants": 824,
+    "top1_seen_merchants": 0.7147873585641826,
+    "top1_seen_ci": [
+      0.6976199765899337,
+      0.7323449083105735
+    ],
+    "top1_new_merchants": 0.11407766990291263,
+    "top1_new_ci": [
+      0.09344660194174757,
+      0.13592233009708737
+    ],
+    "top3_seen_merchants": null,
+    "top3_new_merchants": null,
+    "top3_new_ci": null,
+    "macro_f1": 0.3333493999476478
+  },
+  "per_fold": [
+    {
+      "year": 2018,
+      "n_planned": 3387,
+      "n_scored": 3387,
+      "complete": true,
+      "n_train": 3095,
+      "n_candidates": 19,
+      "metrics": {
+        "n": 3387,
+        "top1": 0.5893120755831119,
+        "top1_ci": [
+          0.5718925302627694,
+          0.6046648951874816
+        ],
+        "top3": 0.8021848243283142,
+        "top3_ci": [
+          0.7886034839090641,
+          0.8160614112784175
+        ],
+        "n_seen_merchants": 2563,
+        "n_new_merchants": 824,
+        "top1_seen_merchants": 0.6726492391728444,
+        "top1_seen_ci": [
+          0.6543113538821693,
+          0.6909871244635193
+        ],
+        "top1_new_merchants": 0.3300970873786408,
+        "top1_new_ci": [
+          0.29975728155339804,
+          0.3640776699029126
+        ],
+        "top3_seen_merchants": 0.8778774873195474,
+        "top3_new_merchants": 0.566747572815534,
+        "top3_new_ci": [
+          0.532736650485437,
+          0.5995145631067961
+        ],
+        "macro_f1": 0.3068374107381831
+      },
+      "paired_merchant_lookup": {
+        "n": 3387,
+        "top1": 0.5686448184233835,
+        "top1_ci": [
+          0.551225273103041,
+          0.5845881310894597
+        ],
+        "top3": null,
+        "top3_ci": null,
+        "n_seen_merchants": 2563,
+        "n_new_merchants": 824,
+        "top1_seen_merchants": 0.7147873585641826,
+        "top1_seen_ci": [
+          0.6976199765899337,
+          0.7323449083105735
+        ],
+        "top1_new_merchants": 0.11407766990291263,
+        "top1_new_ci": [
+          0.09344660194174757,
+          0.13592233009708737
+        ],
+        "top3_seen_merchants": null,
+        "top3_new_merchants": null,
+        "top3_new_ci": null,
+        "macro_f1": 0.3333493999476478
+      }
+    }
+  ],
+  "format_check": {
+    "n": 20,
+    "exact_account": 15,
+    "in_candidate_list": 20,
+    "error": null,
+    "rows": [
+      {
+        "card_line_id": "2018-08_1ea03c75.csv:31",
+        "fold": 2018,
+        "y": "Furniture and Equipment",
+        "generation": "Care Payments",
+        "equals_gold": false,
+        "in_candidate_list": true
+      },
+      {
+        "card_line_id": "2018-04_f80a8ffa.csv:70",
+        "fold": 2018,
+        "y": "Staff Training",
+        "generation": "Staff Training",
+        "equals_gold": true,
+        "in_candidate_list": true
+      },
+      {
+        "card_line_id": "2018-12_2e12cae0.csv:138",
+        "fold": 2018,
+        "y": "Legal and Professional Fees",
+        "generation": "Legal and Professional Fees",
+        "equals_gold": true,
+        "in_candidate_list": true
+      },
+      {
+        "card_line_id": "2018-04_f80a8ffa.csv:163",
+        "fold": 2018,
+        "y": "Catering Supplies",
+        "generation": "Catering Supplies",
+        "equals_gold": true,
+        "in_candidate_list": true
+      },
+      {
+        "card_line_id": "2018-04_f80a8ffa.csv:51",
+        "fold": 2018,
+        "y": "Office Expenses",
+        "generation": "Office Expenses",
+        "equals_gold": true,
+        "in_candidate_list": true
+      },
+      {
+        "card_line_id": "2018-01_f41af6e3.csv:230",
+        "fold": 2018,
+        "y": "Furniture and Equipment",
+        "generation": "Catering Supplies",
+        "equals_gold": false,
+        "in_candidate_list": true
+      },
+      {
+        "card_line_id": "2018-09_008f9544.csv:112",
+        "fold": 2018,
+        "y": "Office Expenses",
+        "generation": "Office Expenses",
+        "equals_gold": true,
+        "in_candidate_list": true
+      },
+      {
+        "card_line_id": "2018-01_f41af6e3.csv:53",
+        "fold": 2018,
+        "y": "Travelling Expenses",
+        "generation": "Travelling Expenses",
+        "equals_gold": true,
+        "in_candidate_list": true
+      },
+      {
+        "card_line_id": "2018-11_244d49e0.csv:279",
+        "fold": 2018,
+        "y": "Travelling Expenses",
+        "generation": "Travelling Expenses",
+        "equals_gold": true,
+        "in_candidate_list": true
+      },
+      {
+        "card_line_id": "2018-03_995d8dcf.csv:279",
+        "fold": 2018,
+        "y": "ICT",
+        "generation": "ICT",
+        "equals_gold": true,
+        "in_candidate_list": true
+      },
+      {
+        "card_line_id": "2018-03_995d8dcf.csv:179",
+        "fold": 2018,
+        "y": "Furniture and Equipment",
+        "generation": "Catering Supplies",
+        "equals_gold": false,
+        "in_candidate_list": true
+      },
+      {
+        "card_line_id": "2018-01_f41af6e3.csv:241",
+        "fold": 2018,
+        "y": "Catering Supplies",
+        "generation": "Catering Supplies",
+        "equals_gold": true,
+        "in_candidate_list": true
+      },
+      {
+        "card_line_id": "2018-09_008f9544.csv:303",
+        "fold": 2018,
+        "y": "Staff Training",
+        "generation": "Furniture and Equipment",
+        "equals_gold": false,
+        "in_candidate_list": true
+      },
+      {
+        "card_line_id": "2018-06_950d9da6.csv:16",
+        "fold": 2018,
+        "y": "Catering Supplies",
+        "generation": "Catering Supplies",
+        "equals_gold": true,
+        "in_candidate_list": true
+      },
+      {
+        "card_line_id": "2018-09_008f9544.csv:297",
+        "fold": 2018,
+        "y": "Travelling Expenses",
+        "generation": "Travelling Expenses",
+        "equals_gold": true,
+        "in_candidate_list": true
+      },
+      {
+        "card_line_id": "2018-01_f41af6e3.csv:103",
+        "fold": 2018,
+        "y": "Catering Supplies",
+        "generation": "Catering Supplies",
+        "equals_gold": true,
+        "in_candidate_list": true
+      },
+      {
+        "card_line_id": "2018-11_244d49e0.csv:238",
+        "fold": 2018,
+        "y": "Office Expenses",
+        "generation": "Office Expenses",
+        "equals_gold": true,
+        "in_candidate_list": true
+      },
+      {
+        "card_line_id": "2018-03_995d8dcf.csv:14",
+        "fold": 2018,
+        "y": "Expenses and Allowances",
+        "generation": "Expenses and Allowances",
+        "equals_gold": true,
+        "in_candidate_list": true
+      },
+      {
+        "card_line_id": "2018-02_ca0bd458.csv:44",
+        "fold": 2018,
+        "y": "Publicity and Promotion",
+        "generation": "Office Expenses",
+        "equals_gold": false,
+        "in_candidate_list": true
+      },
+      {
+        "card_line_id": "2018-01_f41af6e3.csv:29",
+        "fold": 2018,
+        "y": "Catering Supplies",
+        "generation": "Catering Supplies",
+        "equals_gold": true,
+        "in_candidate_list": true
+      }
+    ],
+    "note": "Free generation is not the headline metric. Headline predictions are the closed-set ranking."
+  },
+  "seconds": 2130.2,
+  "seconds_per_example": 0.629,
+  "hardware": {
+    "platform": "Linux-6.12.113+-x86_64-with-glibc2.39",
+    "processor": "x86_64",
+    "cpu_count": 4,
+    "ram_gb_memtotal": 15.63,
+    "gpu": null,
+    "cuda": false,
+    "torch": "2.15.0+cpu"
+  },
+  "cost_usd": null,
+  "cost_note": "Not measured. No GPU invoice was recorded for this run.",
+  "protocol": {
+    "features": [
+      "merchant_raw",
+      "department",
+      "service_category",
+      "amount"
+    ],
+    "excluded": [
+      "merchant_category"
+    ],
+    "candidates": "accounts observed in training years of the fold, alphabetical",
+    "split": "TrustGate rolling statement_year; only the folds listed above were scored"
+  },
+  "example_prompt": "Allowed accounts:\n- Care Payments\n- Catering Supplies\n- Cleaning\n- Clothing and Uniforms\n- Expenses and Allowances\n- Fees and Charges\n- Fuel\n- Furniture and Equipment\n- ICT\n- Legal and Professional Fees\n- Library Equipment\n- Office Expenses\n- Other\n- Publicity and Promotion\n- Repairs and Maintenance\n- Staff Training\n- Third Party Payments\n- Transport and Vehicles\n- Travelling Expenses\n\nCode this transaction.\nMerchant: CARREFOUR MARKET ST H\nDepartment: Services to People\nService: Adult Social Care\nAmount GBP: 14.49"
+}

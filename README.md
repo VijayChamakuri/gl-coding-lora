@@ -38,7 +38,35 @@ TrustGate also reports that, on a **different** window (live months of the auton
 `Qwen/Qwen2.5-0.5B-Instruct`, float32. Ranked by mean token log-probability of the assistant completion over the 19 accounts observed in 2017. Closed-set ranking is the headline. Free generation on 20 shuffled rows is reported beside it and is not the accuracy.
 
 <!-- LM_TABLE -->
-Language-model rows are written here after `results/eval_qwen05_zeroshot_2018.json`, `results/eval_qwen05_fewshot4_2018.json`, and `results/eval_qwen05_lora_2018.json` exist. Until then they are unmeasured.
+Closed-set ranking on all 3,387 lines of 2018, from `results/eval_qwen05_zeroshot_2018.json`, `results/eval_qwen05_fewshot4_2018.json`, and `results/eval_qwen05_lora_2018.json`. Each file has `complete: true` and `measured: true`. The headline is mean token log-probability. Every 2018 label is inside the 19 accounts from 2017 (`n_label_not_in_candidates` = 0). New-merchant rates use the 824 merchants absent from 2017.
+
+| Model | n | Top-1 | 95% CI | Top-3 | Top-3 95% CI | New merchants | New-merchant 95% CI |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Qwen2.5-0.5B zero-shot | 3,387 | 16.5% | 15.4–17.8% | 29.1% | 27.6–30.7% | 5.3% | 3.9–6.9% |
+| Qwen2.5-0.5B 4-shot | 3,387 | 29.1% | 27.5–30.6% | 54.9% | 53.1–56.5% | 14.3% | 12.0–16.7% |
+| Qwen2.5-0.5B LoRA, 1 epoch | 3,387 | 58.9% | 57.2–60.5% | 80.2% | 78.9–81.6% | 33.0% | 30.0–36.4% |
+| Paired merchant lookup (same rows in all three JSON files) | 3,387 | 56.9% | 55.1–58.5% | — | — | 11.4% | 9.3–13.6% |
+
+Full precision from the eval JSON, mean token log-probability:
+
+| Model | Top-1 | Top-1 95% CI | Top-3 | Top-3 95% CI | New-merchant top-1 | New-merchant 95% CI |
+|---|---:|---:|---:|---:|---:|---:|
+| Zero-shot | 0.165338057277827 | 0.1535281960436965–0.17832890463537054 | 0.2911130794213168 | 0.2760555063478004–0.3070637732506643 | 0.05339805825242718 | 0.038834951456310676–0.0691747572815534 |
+| 4-shot | 0.2911130794213168 | 0.27516976675524063–0.30617065249483316 | 0.5485680543253617 | 0.5311485090050192–0.5653971065839977 | 0.14320388349514562 | 0.12014563106796117–0.16747572815533981 |
+| LoRA, 1 epoch | 0.5893120755831119 | 0.5718925302627694–0.6046648951874816 | 0.8021848243283142 | 0.7886034839090641–0.8160614112784175 | 0.3300970873786408 | 0.29975728155339804–0.3640776699029126 |
+| Paired merchant lookup | 0.5686448184233835 | 0.551225273103041–0.5845881310894597 | — | — | 0.11407766990291263 | 0.09344660194174757–0.13592233009708737 |
+
+The paired lookup is identical in the three eval files and equals the fold-2018 merchant lookup in `results/baselines.json` (top-1 0.5686448184233835, new merchants 0.11407766990291263, n=3387). Lookup has no top-3 in that definition, so those cells are empty. LoRA's mean-logprob top-1 (0.5893120755831119) is above that paired lookup. The two marginal 95% intervals overlap. The same LoRA top-1 is below the fold-2018 character TF-IDF logistic regression (0.6120460584588131). LoRA top-3 is 0.8021848243283142 against that TF-IDF top-3 of 0.8012990847357544. LoRA new-merchant top-1 is 0.3300970873786408 against TF-IDF 0.3058252427184466.
+
+On the completed prediction files, mean-logprob ranking used 2 account names in zero-shot (Catering Supplies 1,755; Care Payments 1,632) and 8 names in 4-shot (Travelling Expenses 1,497; Furniture and Equipment 1,319; Catering Supplies 540; Expenses and Allowances 12; Office Expenses 10; Publicity and Promotion 4; Transport and Vehicles 3; Repairs and Maintenance 2). After LoRA it used 12 of the 19 names (Travelling Expenses 828; Furniture and Equipment 692; Catering Supplies 579; Expenses and Allowances 323; Care Payments 299; Publicity and Promotion 192; Fees and Charges 146; ICT 141; Legal and Professional Fees 65; Office Expenses 46; Staff Training 38; Library Equipment 38).
+
+Secondary sum-logprob top-1, stored beside the mean and kept out of the headline: zero-shot 0.07646885149099499, 4-shot 0.2273398287570121, LoRA 0.5934455270150576. Sum-logprob and mean-logprob disagree on zero-shot (0.07646885149099499 against 0.165338057277827) and on 4-shot (0.2273398287570121 against 0.2911130794213168). On LoRA the two top-1 figures are close (0.5934455270150576 against 0.5893120755831119).
+
+Format check is free generation on 20 shuffled rows. It is separate from the closed-set accuracy. Zero-shot: 0/20 exact account strings, 1/20 inside the account list. 4-shot: 0/20 exact, 0/20 inside the list. LoRA: 15/20 exact, 20/20 inside the list. `format_check.error` is null in all three files.
+
+The adapter at `results/adapters/fold_2018` trained for 4060.1 seconds, 0.762 examples/s, mean example loss 0.275091, on 3,095 rows and 19 accounts, for 1 epoch (387 optimizer steps). Trainable parameters 8,798,208 of 502,830,976. Float32, all-linear LoRA, rank 16, alpha 32, dropout 0.05, seed 0, `stopped_early` false, backend `lora`, `qlora_executed` false. Hardware: Linux x86_64, 4 CPU cores, 15.63 GB RAM, no GPU, torch 2.15.0+cpu. `cost_usd` is null.
+
+Scoring the same fold on that machine took 2020.1 s for zero-shot (0.596 s/example), 2814.7 s for 4-shot (0.831 s/example), and 2130.2 s for the adapter (0.629 s/example). Eval `cost_usd` is null.
 <!-- /LM_TABLE -->
 
 Fold 2018 paired baselines, same 3,387 lines (these match TrustGate's 2018 row exactly):
