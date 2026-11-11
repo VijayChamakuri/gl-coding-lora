@@ -1,0 +1,13 @@
+# Same libraries as requirements.txt, without the CPU torch pin.
+# Install a CUDA build of torch that matches the driver before this file,
+# then: pip install bitsandbytes
+# The training script uses QLoRA when CUDA is available and bitsandbytes imports.
+numpy==2.5.4
+pandas==3.1.1
+scipy==1.18.1
+scikit-learn==1.9.1
+pyarrow==26.0.1
+openpyxl==3.1.5
+transformers==5.22.2
+peft==0.21.2
+pytest==9.2.0

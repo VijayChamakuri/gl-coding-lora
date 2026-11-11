@@ -1,0 +1,3 @@
+judgegate_commit=ff0b8f6b8d3ec119c3f3d2131dc1e8a8b190bb4e
+trustgate_commit=66cf7ab2fb866140a75430415ac94dfa1f1907cb
+source=https://github.com/VijayChamakuri/judgegate/blob/ff0b8f6b8d3ec119c3f3d2131dc1e8a8b190bb4e/data/stockport_labelled_lines.csv.gz

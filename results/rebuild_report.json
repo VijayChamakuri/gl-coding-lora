@@ -1,0 +1,20 @@
+{
+  "download_files": 111,
+  "build": {
+    "parsed_rows": 33377,
+    "with_gl_account": 15355,
+    "placeholder": 58,
+    "refund_or_null_amount": 1160,
+    "labelled_lines": 14851,
+    "files": 111,
+    "duplicate_sha_skipped": 1
+  },
+  "comparison": {
+    "reference_rows": 14851,
+    "rebuilt_rows": 14851,
+    "rows_only_in_rebuild": 0,
+    "rows_only_in_reference": 0,
+    "content_match": true
+  },
+  "note": "Rebuilt from the 111 CKAN monthly files (1 duplicate SHA skipped). Content and card_line_id sets match the JudgeGate export."
+}

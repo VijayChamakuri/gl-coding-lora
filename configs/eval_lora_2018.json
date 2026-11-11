@@ -1,0 +1,12 @@
+{
+  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+  "folds": [2018],
+  "shots": 0,
+  "max_eval": 0,
+  "seed": 0,
+  "use_adapter": true,
+  "adapter_dir": "results/adapters",
+  "format_check": 20,
+  "tag": "qwen05_lora_2018",
+  "output": "results/eval_qwen05_lora_2018.json"
+}

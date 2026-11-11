@@ -1,0 +1,411 @@
+{
+  "measured": true,
+  "protocol": "TrustGate card-feed rolling years 2018-2022, pooled",
+  "seconds": 111.3,
+  "hardware": {
+    "platform": "Linux-6.12.113+-x86_64-with-glibc2.39",
+    "processor": "x86_64",
+    "cpu_count": 4,
+    "ram_gb_memtotal": 15.63,
+    "gpu": null,
+    "cuda": false,
+    "torch": "2.15.0+cpu"
+  },
+  "baselines": {
+    "years": [
+      2018,
+      2019,
+      2020,
+      2021,
+      2022
+    ],
+    "n_labelled": 14851,
+    "label_ceiling_card_feed": 0.8608174533701434,
+    "models": {
+      "majority": {
+        "n": 11756,
+        "accuracy": 0.16970057842803674,
+        "accuracy_ci": [
+          0.16306566859476013,
+          0.17608242599523646
+        ],
+        "macro_f1": 0.0190146121766018,
+        "top3_micro": 0.5254338210275604,
+        "top3_year_macro": 0.5230769922592371,
+        "accuracy_seen_merchants": 0.19222513713331743,
+        "accuracy_new_merchants": 0.11364985163204748,
+        "n_new_merchants": 3370,
+        "new_merchant_ci": [
+          0.10325667655786351,
+          0.12404302670623141
+        ]
+      },
+      "merchant_lookup": {
+        "n": 11756,
+        "accuracy": 0.5450833616876488,
+        "accuracy_ci": [
+          0.53623681524328,
+          0.55435522286492
+        ],
+        "macro_f1": 0.31269065179412053,
+        "top3_micro": null,
+        "top3_year_macro": null,
+        "accuracy_seen_merchants": 0.7005723825423325,
+        "accuracy_new_merchants": 0.15816023738872403,
+        "n_new_merchants": 3370,
+        "new_merchant_ci": [
+          0.14540059347181009,
+          0.17002967359050444
+        ]
+      },
+      "merchant_top3": {
+        "n": 11756,
+        "accuracy": 0.5450833616876488,
+        "accuracy_ci": [
+          0.53623681524328,
+          0.55435522286492
+        ],
+        "macro_f1": 0.31269065179412053,
+        "top3_micro": 0.7521265736645117,
+        "top3_year_macro": 0.761510346173038,
+        "accuracy_seen_merchants": 0.7005723825423325,
+        "accuracy_new_merchants": 0.15816023738872403,
+        "n_new_merchants": 3370,
+        "new_merchant_ci": [
+          0.14540059347181009,
+          0.17002967359050444
+        ]
+      },
+      "tfidf_logreg": {
+        "n": 11756,
+        "accuracy": 0.6093058863559033,
+        "accuracy_ci": [
+          0.6001190881252126,
+          0.6184926845865941
+        ],
+        "macro_f1": 0.3542200905507921,
+        "top3_micro": 0.8012929567880231,
+        "top3_year_macro": 0.8069593575420013,
+        "accuracy_seen_merchants": 0.7151204388266158,
+        "accuracy_new_merchants": 0.34599406528189913,
+        "n_new_merchants": 3370,
+        "new_merchant_ci": [
+          0.32967359050445105,
+          0.3626112759643917
+        ]
+      }
+    },
+    "per_year": [
+      {
+        "model": "majority",
+        "year": 2018,
+        "n": 3387,
+        "accuracy": 0.2146442279303218,
+        "top3": 0.4877472689695896,
+        "macro_f1": 0.018601437965355783,
+        "seen_merchant_share": 0.7567168585769117,
+        "accuracy_new_merchants": 0.05218446601941747,
+        "seconds": 0.02
+      },
+      {
+        "model": "merchant_lookup",
+        "year": 2018,
+        "n": 3387,
+        "accuracy": 0.5686448184233835,
+        "top3": null,
+        "macro_f1": 0.3333493999476478,
+        "seen_merchant_share": 0.7567168585769117,
+        "accuracy_new_merchants": 0.11407766990291263,
+        "seconds": 0.05
+      },
+      {
+        "model": "merchant_top3",
+        "year": 2018,
+        "n": 3387,
+        "accuracy": 0.5686448184233835,
+        "top3": 0.7764983761440803,
+        "macro_f1": 0.3333493999476478,
+        "seen_merchant_share": 0.7567168585769117,
+        "accuracy_new_merchants": 0.11407766990291263,
+        "seconds": 0.03
+      },
+      {
+        "model": "tfidf_logreg",
+        "year": 2018,
+        "n": 3387,
+        "accuracy": 0.6120460584588131,
+        "top3": 0.8012990847357544,
+        "macro_f1": 0.35047105578850046,
+        "seen_merchant_share": 0.7567168585769117,
+        "accuracy_new_merchants": 0.3058252427184466,
+        "seconds": 8.96
+      },
+      {
+        "model": "majority",
+        "year": 2019,
+        "n": 3382,
+        "accuracy": 0.22028385570668244,
+        "top3": 0.5836782968657599,
+        "macro_f1": 0.019001951207070256,
+        "seen_merchant_share": 0.52602010644589,
+        "accuracy_new_merchants": 0.20087336244541484,
+        "seconds": 0.02
+      },
+      {
+        "model": "merchant_lookup",
+        "year": 2019,
+        "n": 3382,
+        "accuracy": 0.4689532820816085,
+        "top3": null,
+        "macro_f1": 0.30239952522409763,
+        "seen_merchant_share": 0.52602010644589,
+        "accuracy_new_merchants": 0.2183406113537118,
+        "seconds": 0.07
+      },
+      {
+        "model": "merchant_top3",
+        "year": 2019,
+        "n": 3382,
+        "accuracy": 0.4689532820816085,
+        "top3": 0.70816085156712,
+        "macro_f1": 0.30239952522409763,
+        "seen_merchant_share": 0.52602010644589,
+        "accuracy_new_merchants": 0.2183406113537118,
+        "seconds": 0.03
+      },
+      {
+        "model": "tfidf_logreg",
+        "year": 2019,
+        "n": 3382,
+        "accuracy": 0.57806031933767,
+        "top3": 0.7921348314606742,
+        "macro_f1": 0.3816190133534431,
+        "seen_merchant_share": 0.52602010644589,
+        "accuracy_new_merchants": 0.42919525888958204,
+        "seconds": 15.6
+      },
+      {
+        "model": "majority",
+        "year": 2020,
+        "n": 2143,
+        "accuracy": 0.09939337377508166,
+        "top3": 0.5030331311245917,
+        "macro_f1": 0.008610235265583313,
+        "seen_merchant_share": 0.810079328044797,
+        "accuracy_new_merchants": 0.02457002457002457,
+        "seconds": 0.01
+      },
+      {
+        "model": "merchant_lookup",
+        "year": 2020,
+        "n": 2143,
+        "accuracy": 0.5716285580961269,
+        "top3": null,
+        "macro_f1": 0.30786440262172965,
+        "seen_merchant_share": 0.810079328044797,
+        "accuracy_new_merchants": 0.10810810810810811,
+        "seconds": 0.03
+      },
+      {
+        "model": "merchant_top3",
+        "year": 2020,
+        "n": 2143,
+        "accuracy": 0.5716285580961269,
+        "top3": 0.7083527764815679,
+        "macro_f1": 0.30786440262172965,
+        "seen_merchant_share": 0.810079328044797,
+        "accuracy_new_merchants": 0.10810810810810811,
+        "seconds": 0.04
+      },
+      {
+        "model": "tfidf_logreg",
+        "year": 2020,
+        "n": 2143,
+        "accuracy": 0.6056929538030797,
+        "top3": 0.7685487634157723,
+        "macro_f1": 0.3393836440230594,
+        "seen_merchant_share": 0.810079328044797,
+        "accuracy_new_merchants": 0.20638820638820637,
+        "seconds": 21.2
+      },
+      {
+        "model": "majority",
+        "year": 2021,
+        "n": 1910,
+        "accuracy": 0.060732984293193716,
+        "top3": 0.5130890052356021,
+        "macro_f1": 0.005725567620927937,
+        "seen_merchant_share": 0.8115183246073299,
+        "accuracy_new_merchants": 0.016666666666666666,
+        "seconds": 0.01
+      },
+      {
+        "model": "merchant_lookup",
+        "year": 2021,
+        "n": 1910,
+        "accuracy": 0.5717277486910994,
+        "top3": null,
+        "macro_f1": 0.3204827974968458,
+        "seen_merchant_share": 0.8115183246073299,
+        "accuracy_new_merchants": 0.06388888888888888,
+        "seconds": 0.05
+      },
+      {
+        "model": "merchant_top3",
+        "year": 2021,
+        "n": 1910,
+        "accuracy": 0.5717277486910994,
+        "top3": 0.8104712041884817,
+        "macro_f1": 0.3204827974968458,
+        "seen_merchant_share": 0.8115183246073299,
+        "accuracy_new_merchants": 0.06388888888888888,
+        "seconds": 0.02
+      },
+      {
+        "model": "tfidf_logreg",
+        "year": 2021,
+        "n": 1910,
+        "accuracy": 0.6376963350785341,
+        "top3": 0.837696335078534,
+        "macro_f1": 0.39456340486340574,
+        "seen_merchant_share": 0.8115183246073299,
+        "accuracy_new_merchants": 0.2388888888888889,
+        "seconds": 29.12
+      },
+      {
+        "model": "majority",
+        "year": 2022,
+        "n": 934,
+        "accuracy": 0.20770877944325483,
+        "top3": 0.5278372591006424,
+        "macro_f1": 0.019109535066981875,
+        "seen_merchant_share": 0.8115631691648822,
+        "accuracy_new_merchants": 0.011363636363636364,
+        "seconds": 0.01
+      },
+      {
+        "model": "merchant_lookup",
+        "year": 2022,
+        "n": 934,
+        "accuracy": 0.619914346895075,
+        "top3": null,
+        "macro_f1": 0.3774798956730307,
+        "seen_merchant_share": 0.8115631691648822,
+        "accuracy_new_merchants": 0.125,
+        "seconds": 0.03
+      },
+      {
+        "model": "merchant_top3",
+        "year": 2022,
+        "n": 934,
+        "accuracy": 0.619914346895075,
+        "top3": 0.80406852248394,
+        "macro_f1": 0.3774798956730307,
+        "seen_merchant_share": 0.8115631691648822,
+        "accuracy_new_merchants": 0.125,
+        "seconds": 0.02
+      },
+      {
+        "model": "tfidf_logreg",
+        "year": 2022,
+        "n": 934,
+        "accuracy": 0.6627408993576017,
+        "top3": 0.8351177730192719,
+        "macro_f1": 0.42338728790830676,
+        "seen_merchant_share": 0.8115631691648822,
+        "accuracy_new_merchants": 0.3181818181818182,
+        "seconds": 32.13
+      }
+    ]
+  },
+  "published_trustgate": {
+    "commit": "66cf7ab2fb866140a75430415ac94dfa1f1907cb",
+    "source": "https://github.com/VijayChamakuri/trustgate/blob/66cf7ab2fb866140a75430415ac94dfa1f1907cb/results/real/gl_benchmark.json",
+    "card_feed": {
+      "majority": {
+        "n": 11756,
+        "accuracy": 0.16970057842803674,
+        "accuracy_ci": [
+          0.16306566859476013,
+          0.17608242599523646
+        ],
+        "macro_f1": 0.0190146121766018,
+        "top3": null,
+        "accuracy_seen_merchants": 0.19222513713331743,
+        "accuracy_new_merchants": 0.11364985163204748
+      },
+      "merchant_lookup": {
+        "n": 11756,
+        "accuracy": 0.5450833616876488,
+        "accuracy_ci": [
+          0.53623681524328,
+          0.55435522286492
+        ],
+        "macro_f1": 0.31269065179412053,
+        "top3": null,
+        "accuracy_seen_merchants": 0.7005723825423325,
+        "accuracy_new_merchants": 0.15816023738872403
+      },
+      "tfidf_logreg": {
+        "n": 11756,
+        "accuracy": 0.6092208234093229,
+        "accuracy_ci": [
+          0.6000297720313031,
+          0.6184097482136781
+        ],
+        "macro_f1": 0.35416892500608343,
+        "top3": 0.8067477572193578,
+        "accuracy_seen_merchants": 0.7148819461006439,
+        "accuracy_new_merchants": 0.3462908011869436
+      },
+      "tfidf+embed_logreg": {
+        "n": 11756,
+        "accuracy": 0.624106839060905,
+        "accuracy_ci": [
+          0.6150880401497107,
+          0.6333787002381762
+        ],
+        "macro_f1": 0.3787634063780648,
+        "top3": 0.8292839883606696,
+        "accuracy_seen_merchants": 0.7114238015740519,
+        "accuracy_new_merchants": 0.40682492581602375
+      }
+    },
+    "label_ceiling_card_feed": 0.8608174533701434,
+    "remeasured_here": [
+      "majority",
+      "merchant_lookup",
+      "tfidf_logreg"
+    ],
+    "not_remeasured_here": [
+      "tfidf+embed_logreg",
+      "embed_logreg",
+      "embed_knn"
+    ]
+  },
+  "delta_vs_published": {
+    "majority": {
+      "published_accuracy": 0.16970057842803674,
+      "remeasured_accuracy": 0.16970057842803674,
+      "accuracy_abs_diff": 0.0,
+      "line_delta_at_n11756": 0.0
+    },
+    "merchant_lookup": {
+      "published_accuracy": 0.5450833616876488,
+      "remeasured_accuracy": 0.5450833616876488,
+      "accuracy_abs_diff": 0.0,
+      "line_delta_at_n11756": 0.0
+    },
+    "tfidf_logreg": {
+      "published_accuracy": 0.6092208234093229,
+      "remeasured_accuracy": 0.6093058863559033,
+      "accuracy_abs_diff": 8.506294658039426e-05,
+      "line_delta_at_n11756": 1.0
+    }
+  },
+  "label_ceiling_abs_diff": 0.0,
+  "merchant_top3_definition": "Up to three most frequent training accounts for the merchant, padded with the global ranking. Unseen merchants use department+service, then the global ranking. Not reported by TrustGate.",
+  "majority_top3_definition": "Gold account is one of the three most frequent training-fold accounts.",
+  "top3_year_macro_note": "TrustGate's published top-3 is top3_year_macro, the unweighted mean of yearly rates. top3_micro is line-weighted.",
+  "cost_usd": null
+}

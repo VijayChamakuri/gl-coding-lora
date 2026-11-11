@@ -1,0 +1,14 @@
+# Pinned to the CPU environment that produced results/ in this repository.
+# PyTorch is the CPU wheel. On a CUDA machine, install a CUDA torch build
+# first and then install requirements-gpu.txt instead of this file.
+--extra-index-url https://download.pytorch.org/whl/cpu
+numpy==2.5.4
+pandas==3.1.1
+scipy==1.18.1
+scikit-learn==1.9.1
+pyarrow==26.0.1
+openpyxl==3.1.5
+torch==2.15.0+cpu
+transformers==5.22.2
+peft==0.21.2
+pytest==9.2.0

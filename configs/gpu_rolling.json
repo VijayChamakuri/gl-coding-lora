@@ -1,0 +1,22 @@
+{
+  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+  "folds": [2018, 2019, 2020, 2021, 2022],
+  "epochs": 2,
+  "lora_r": 16,
+  "lora_alpha": 32,
+  "lora_dropout": 0.05,
+  "learning_rate": 0.0002,
+  "weight_decay": 0.0,
+  "warmup_ratio": 0.03,
+  "max_grad_norm": 1.0,
+  "batch_size": 4,
+  "grad_accum": 4,
+  "max_length": 512,
+  "qlora": "auto",
+  "max_train": 0,
+  "target_modules": "all-linear",
+  "seed": 0,
+  "dtype": "auto",
+  "gradient_checkpointing": false,
+  "output_dir": "results/adapters_rolling"
+}
