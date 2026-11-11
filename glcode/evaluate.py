@@ -20,9 +20,9 @@ import torch
 from .baselines import lookup_on_rows
 from .dataset import candidate_accounts, iter_folds, load_lines, select_exemplars, stratified_sample
 from .hardware import describe
-from .metrics import summarize
+from .metrics import rank_labels, summarize
 from .prompts import user_message
-from .score import completion_logprobs, rank_labels
+from .score import completion_logprobs
 
 os.environ.setdefault("HF_HOME", str(Path(__file__).resolve().parents[1] / ".cache" / "huggingface"))
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")

@@ -17,6 +17,9 @@ from __future__ import annotations
 import torch
 
 from .chat import split_prompt_completion
+from .metrics import rank_labels
+
+__all__ = ["completion_logprobs", "rank_labels"]
 
 
 def completion_logprobs(model, tokenizer, user: str, labels: list[str]) -> tuple[list[float], list[float]]:
@@ -59,16 +62,3 @@ def completion_logprobs(model, tokenizer, user: str, labels: list[str]) -> tuple
     return sums.tolist(), means.tolist()
 
 
-def rank_labels(labels: list[str], means: list[float], sums: list[float], k: int = 3) -> dict:
-    """Stable ranking: equal scores keep the incoming label order."""
-    order_mean = sorted(range(len(labels)), key=lambda i: (-means[i], i))
-    order_sum = sorted(range(len(labels)), key=lambda i: (-sums[i], i))
-    top = [labels[i] for i in order_mean[:k]]
-    return {
-        "pred": labels[order_mean[0]],
-        "top3": top,
-        "pred_sum": labels[order_sum[0]],
-        "top3_sum": [labels[i] for i in order_sum[:k]],
-        "mean_logprob": means[order_mean[0]],
-        "sum_logprob": sums[order_sum[0]],
-    }

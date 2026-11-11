@@ -7,6 +7,10 @@ __pycache__/
 .cache/
 data/raw/
 data/processed/
+data/mlx/
+results/mlx_configs/
+results/mlx_adapters/
+.venv-mlx/
 results/probes/
 results/*.log
 *.tmp

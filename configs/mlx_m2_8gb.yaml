@@ -1,0 +1,29 @@
+# Memory-safe QLoRA defaults for an 8GB M2 MacBook Air.
+# scripts/run_mlx.sh rewrites a per-fold copy under results/mlx_configs/
+# with the real data path, adapter path, and iteration count.
+# A 4-bit mlx-community base plus LoRA is MLX-LM's QLoRA path.
+model: "mlx-community/Qwen2.5-1.5B-Instruct-4bit"
+train: true
+fine_tune_type: lora
+optimizer: adamw
+data: "data/mlx/fold_2018"
+adapter_path: "results/mlx_adapters/fold_2018/qwen25-15b-instruct-4bit"
+seed: 0
+num_layers: 8
+batch_size: 1
+iters: 3095
+val_batches: 8
+learning_rate: 1.0e-4
+steps_per_report: 10
+steps_per_eval: 500
+save_every: 1000
+mask_prompt: true
+grad_checkpoint: true
+grad_accumulation_steps: 1
+max_seq_length: 256
+test: false
+lora_parameters:
+  keys: ["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj", "self_attn.o_proj"]
+  rank: 8
+  scale: 20.0
+  dropout: 0.0

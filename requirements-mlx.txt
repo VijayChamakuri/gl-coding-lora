@@ -1,0 +1,9 @@
+# Apple Silicon only. mlx-lm 0.32.2 was the version described in public
+# writeups as of October 2026. scripts/run_mlx.sh installs this file inside
+# .venv-mlx and, if the pin is rejected, retries mlx-lm[train] unpinned.
+# The Linux development VM did not install or import this stack.
+mlx-lm[train]==0.32.2
+numpy==2.5.4
+pandas==3.1.1
+scikit-learn==1.9.1
+scipy==1.18.1

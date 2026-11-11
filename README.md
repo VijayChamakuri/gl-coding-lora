@@ -78,10 +78,11 @@ Fold 2018 paired baselines, same 3,387 lines (these match TrustGate's 2018 row e
 
 ## What was not measured
 
-- QLoRA. This machine has no CUDA device. The QLoRA branch is implemented and used only when CUDA and bitsandbytes are both available.
-- The five-fold rolling language-model run (11,756 lines, five adapters).
+- QLoRA on CUDA. This machine has no CUDA device. The bitsandbytes path is implemented and used only when CUDA and bitsandbytes are both available.
+- The MLX run below. No Mac accuracy, loss, or runtime from that path is in this repository.
+- The five-fold rolling language-model run on the PyTorch path (11,756 lines, five adapters).
 - `BAAI/bge-small-en-v1.5` and TrustGate's combined TF-IDF + embedding model. The 62.4% / 40.7% / 82.9% figures above are citations.
-- Any model larger than Qwen2.5-0.5B.
+- Any model larger than Qwen2.5-0.5B on this machine. The MLX path is aimed at a 4-bit 1.5B and has not been executed.
 - Dollar cost. No invoice was recorded. Cost = measured GPU hours × the provider's price at the time you rent it. Do not quote a dollar figure from this repository.
 - A second training epoch, a different rank, or early stopping on the test fold. The run is the config in `configs/cpu_fold2018.json`, once.
 
@@ -129,6 +130,33 @@ python scripts/evaluate.py --config configs/gpu_eval_rolling.json
 
 That trains two epochs on each of the five folds, into `results/adapters_rolling/`. Record `seconds` from each `train_manifest.json` and multiply by the host's hourly price. This repository does not estimate that product.
 
+### MLX on an M2 MacBook Air (8GB, fanless)
+
+Not run. This development machine is Linux x86_64, and MLX does not install there. There is no Mac loss, accuracy, tokens/second, or wall time in this repository. Do not fill one in.
+
+The path is QLoRA in the sense MLX-LM uses: a 4-bit `mlx-community` base plus a LoRA adapter (`mlx_lm.lora`). The training rows are the same TrustGate fold as the PyTorch run. Fold 2018 trains on all 3,095 lines from 2017 and scores all 3,387 lines from 2018. Ranking is mean token log-probability over the training-year account list, with the same top-1, top-3, new-merchant, and bootstrap fields as `results/eval_qwen05_lora_2018.json`. `valid.jsonl` is 128 of those training rows copied out so mlx-lm can print a validation loss. They are not removed from `train.jsonl`, and the test year is in neither file. Do not quote that validation loss as the result.
+
+Checked here, on Linux: the JSONL export (3,095 train rows, no 2018 ids), the YAML (batch 1, 8 LoRA layers, rank 8, sequence length 256, gradient checkpointing, prompt masking), the out-of-memory detector, and the log-probability arithmetic. Not checked: loading MLX, the Metal training loop, adapter scoring, and the 1.5B-to-0.5B fallback actually catching an allocation failure.
+
+Use Python 3.11 or 3.12. The system Python on macOS is often 3.9, which is too old. This command is the one to run on the Air:
+
+```bash
+python3.12 --version
+PYTHON=python3.12 make mlx
+```
+
+`make mlx` creates `.venv-mlx`, installs `requirements-mlx.txt`, exports `data/mlx/fold_2018`, trains, and writes `results/eval_mlx_2018.json`. If the 1.5B model dies with an out-of-memory error, the same command retries `mlx-community/Qwen2.5-0.5B-Instruct-4bit` and records `fallback_from` in that JSON. All five test years:
+
+```bash
+PYTHON=python3.12 make mlx-rolling
+```
+
+That trains five adapters (3,095 + 6,482 + 9,864 + 12,007 + 13,917 steps at batch size 1) and writes `results/eval_mlx_2018_2019_2020_2021_2022.json`.
+
+Defaults, in `configs/mlx_m2_8gb.yaml`: `mlx-community/Qwen2.5-1.5B-Instruct-4bit`, batch size 1, gradient checkpointing, max sequence length 256, LoRA on the last 8 attention projections (`q`, `k`, `v`, `o`) at rank 8, AdamW, learning rate 1e-4, one pass over the training rows, seed 0. With the Qwen2.5 tokenizer on this machine, the longest training chat across all five folds is 199 tokens (186 tokens for 2017 alone), so 256 does not cut off the account name. The export script checks that again when `transformers` is installed and refuses to train if a chat would be truncated. `requirements-mlx.txt` pins `mlx-lm[train]==0.32.2`. If that pin is rejected, the script installs `mlx-lm[train]` unpinned and prints the version. Record that version next to the result. It was not installed here.
+
+The Air is fanless. After a few minutes the chassis warms up and Metal slows down, then slows further if the machine is on battery or other apps are open. Plug it in, close browsers, and let the run finish; a partial `results/predictions/mlx_*.jsonl` resumes. No duration is stated here because none was measured. The result JSON's `seconds` field is the measured scoring time once the Mac run exists, and the training log under `results/mlx_fold_*.log` is the measured training time.
+
 ## Data
 
 Stockport Metropolitan Borough Council purchase-card transactions, data.gov.uk dataset `purchase-card-transactions`, Open Government Licence v3.0. Contains public sector information licensed under the Open Government Licence v3.0.
@@ -143,6 +171,8 @@ The purpose map in `data/stockport_purpose_map.csv` is the reviewed seed from Tr
 | `scripts/run_baselines.py` | Majority, merchant lookup, merchant top-3, TF-IDF logistic regression |
 | `scripts/train_lora.py` | LoRA, or QLoRA when CUDA and bitsandbytes are available |
 | `scripts/evaluate.py` | Closed-set log-probability ranking, with a paired merchant lookup |
+| `scripts/run_mlx.sh` | Mac-only MLX setup, QLoRA train, and the same scoring protocol |
+| `make mlx` | Fold 2018 on an M2 Air. `make mlx-rolling` is all five years |
 | `glcode/` | The library those scripts call |
 | `results/baselines.json` | Recomputed classical metrics |
 

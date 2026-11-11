@@ -20,6 +20,20 @@ def bootstrap_ci(correct: np.ndarray, n: int = 2000, seed: int = 0) -> list[floa
     return [float(np.quantile(means, 0.025)), float(np.quantile(means, 0.975))]
 
 
+def rank_labels(labels: list[str], means: list[float], sums: list[float], k: int = 3) -> dict:
+    """Stable ranking: equal scores keep the incoming label order."""
+    order_mean = sorted(range(len(labels)), key=lambda i: (-means[i], i))
+    order_sum = sorted(range(len(labels)), key=lambda i: (-sums[i], i))
+    return {
+        "pred": labels[order_mean[0]],
+        "top3": [labels[i] for i in order_mean[:k]],
+        "pred_sum": labels[order_sum[0]],
+        "top3_sum": [labels[i] for i in order_sum[:k]],
+        "mean_logprob": means[order_mean[0]],
+        "sum_logprob": sums[order_sum[0]],
+    }
+
+
 def summarize(correct: np.ndarray, top3: np.ndarray, seen: np.ndarray, y=None, pred=None) -> dict:
     correct = np.asarray(correct, dtype=float)
     top3 = np.asarray(top3, dtype=float)
