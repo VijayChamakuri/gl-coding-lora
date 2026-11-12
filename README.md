@@ -16,9 +16,7 @@ On the 824 merchants that did not appear in 2017, LoRA 0.5B picks the booked acc
 - All 3,387 lines: LoRA 0.5B is 58.9% (57.2–60.5). Lookup is 56.9% (55.2–58.5). TF-IDF is 61.2%.
 - The 4-bit 1.5B model is 56.7% (55.0–58.5) overall and 28.4% (25.5–31.4) on new merchants. It does not beat the 0.5B LoRA or TF-IDF.
 
-![Top-1 and new-merchant scoreboard](docs/img/scoreboard.png)
-
-Teal is the 0.5B LoRA. Every other bar is grey.
+![Top-1 and new-merchant scoreboard. Teal bars are the 0.5B LoRA. The others are grey.](docs/img/scoreboard.png)
 
 ## Ablation
 
@@ -32,15 +30,40 @@ The model sees the merchant, the department, the service, and the amount. It doe
 
 ![Carrefour line, the account list, and the saved top 3](docs/img/flow.png)
 
-The booked account is Expenses and Allowances. It is first in the saved 4-bit top 3. Lookup, which had never seen this shop, answered Travelling Expenses. `make demo` runs the committed 0.5B adapter, not this 4-bit ranking. The three outcome cards are in [docs/charts.md](docs/charts.md).
+The booked account is Expenses and Allowances. Lookup, which had never seen this shop, answered Travelling Expenses.
+
+`make demo` on the committed 0.5B adapter prints:
+
+```
+booked: Expenses and Allowances
+top3: Expenses and Allowances | Travelling Expenses | Fees and Charges
+```
+
+The diagram above is the stored 4-bit top 3 for the same line. Third place there is Publicity and Promotion. The three outcome cards are in [docs/charts.md](docs/charts.md).
 
 ## How it works
 
 The scorer does not let the model type a free answer. It ranks the 19 accounts from the 2017 list (`n_candidates` in [results/eval_qwen05_lora_2018.json](results/eval_qwen05_lora_2018.json)). For each name it takes the mean token log-probability of that name as the reply. The highest mean wins.
 
-[glcode/score.py](glcode/score.py) also returns the sum of those log-probabilities. The sum is not the headline. Account names differ in length. A sum would favour a short name such as ICT over Legal and Professional Fees. The mean was chosen before any language-model result was measured.
+[glcode/score.py](glcode/score.py) builds one prompt, then the tokens for each account name. It sums the log-prob of those answer tokens and divides by the token count. A sum would favour a short name such as ICT over Legal and Professional Fees, so the mean is the rank. [glcode/metrics.py](glcode/metrics.py) sorts those means and keeps the top name. The mean was chosen before any language-model result was measured.
 
 ```python
+prompt, first_comp = split_prompt_completion(tokenizer, user, labels[0])
+comps = [first_comp]
+for label in labels[1:]:
+    prompt_i, comp = split_prompt_completion(tokenizer, user, label)
+    if prompt_i != prompt:
+        raise RuntimeError("prompt tokens changed across labels; the account list must stay fixed")
+    comps.append(comp)
+...
+first = torch.log_softmax(out.logits[0, -1].float(), dim=-1)
+sums = torch.tensor([first[comp[0]].item() for comp in comps], dtype=torch.float64)
+counts = torch.ones(len(comps), dtype=torch.float64)
+...
+for i, comp in enumerate(comps):
+    for t in range(1, len(comp)):
+        sums[i] += logp[i, t - 1, comp[t]].item()
+        counts[i] += 1
 means = sums / counts
 return sums.tolist(), means.tolist()
 ```
@@ -76,9 +99,9 @@ The intervals are bootstrap 95% CIs from [glcode/metrics.py](glcode/metrics.py):
 
 Longer notes, including the exact Mac samples, are in [docs/NOTES.md](docs/NOTES.md).
 
-## The Mac
+## Fitting a 1.5B model in 8GB
 
-The 1.5B run had to fit an 8GB M2 MacBook Air. The config uses batch 1, sequence length 256, LoRA on the last 8 attention projections, and gradient checkpointing.
+The machine has 8GB of unified memory. [configs/mlx_m2_8gb.yaml](configs/mlx_m2_8gb.yaml) keeps the 4-bit 1.5B run inside that limit: batch size 1, sequence length 256, LoRA on the last 8 attention projections, and gradient checkpointing. If that still runs out of memory, [scripts/run_mlx.sh](scripts/run_mlx.sh) falls back to the 0.5B 4-bit model.
 
 ![Train time, peak memory, and seconds per line](docs/img/laptop.png)
 
@@ -93,17 +116,15 @@ Training took ~36 min. Peak sampled footprint was 6.2 GB. Scoring took 11.5 s pe
 
 ## What I would do next
 
-Score 2019 through 2022 the same way. Those language-model scores are not in the repo.
-
-Combine TF-IDF with the LoRA. That ensemble was not built.
-
-Let the model pass when the top name is close to the second. No calibration number is in the files.
+- Score 2019-2022 as additional yearly folds.
+- Ensemble TF-IDF with the LoRA scores.
+- Add abstention when the top two candidates are close, and measure calibration.
 
 ## Run it
 
 `make test` runs pytest. The six files are [tests/test_baselines_published.py](tests/test_baselines_published.py), [tests/test_mlx_export.py](tests/test_mlx_export.py), [tests/test_parse.py](tests/test_parse.py), [tests/test_prompts_and_metrics.py](tests/test_prompts_and_metrics.py), [tests/test_reference_and_split.py](tests/test_reference_and_split.py), and [tests/test_score_fp32.py](tests/test_score_fp32.py).
 
-The 0.5B training run, on a Linux machine with 4 cores, 15.63 GB of RAM, and no GPU, took 4060.1 seconds. See [results/adapters/fold_2018/train_manifest.json](results/adapters/fold_2018/train_manifest.json).
+The 0.5B training run, on a Linux machine with 4 cores, about 16 GB of RAM, and no GPU, took about 68 min. The exact fields are in [results/adapters/fold_2018/train_manifest.json](results/adapters/fold_2018/train_manifest.json).
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
