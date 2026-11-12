@@ -8,7 +8,7 @@ The label is the account finance staff booked. The inputs are what a card feed s
 
 Classical baselines were recomputed on the full rolling split (11,756 test lines, statement years 2018–2022). Majority class and merchant lookup match the published TrustGate figures exactly, including the bootstrap intervals. The label ceiling matches exactly. Character TF-IDF logistic regression is one labelled line off the published accuracy (0.609306 here, 0.609221 published).
 
-Language-model numbers below are only for **fold 2018** (train on 2017, score 2018). They are not the pooled 11,756-line number. QLoRA was not run. Dollar cost was not measured.
+Language-model numbers below are only for **fold 2018** (train on 2017, score 2018). They are not the pooled 11,756-line number. The MLX 4-bit 1.5B QLoRA row is the Mac run in `results/eval_mlx_2018.json`. Dollar cost was not measured.
 
 ### Card-feed rolling split, pooled 2018–2022
 
@@ -45,6 +45,7 @@ Closed-set ranking on all 3,387 lines of 2018, from `results/eval_qwen05_zerosho
 | Qwen2.5-0.5B zero-shot | 3,387 | 16.5% | 15.4–17.8% | 29.1% | 27.6–30.7% | 5.3% | 3.9–6.9% |
 | Qwen2.5-0.5B 4-shot | 3,387 | 29.1% | 27.5–30.6% | 54.9% | 53.1–56.5% | 14.3% | 12.0–16.7% |
 | Qwen2.5-0.5B LoRA, 1 epoch | 3,387 | 58.9% | 57.2–60.5% | 80.2% | 78.9–81.6% | 33.0% | 30.0–36.4% |
+| Qwen2.5-1.5B-Instruct-4bit MLX QLoRA | 3,387 | 0.5674638322999704 | 0.5497416592855033–0.5851786241511662 | 0.7753173900206672 | 0.7608503100088574–0.7891939769707705 | 0.28398058252427183 | 0.25485436893203883–0.3143203883495146 |
 | Paired merchant lookup (same rows in all three JSON files) | 3,387 | 56.9% | 55.1–58.5% | — | — | 11.4% | 9.3–13.6% |
 
 Full precision from the eval JSON, mean token log-probability:
@@ -54,9 +55,12 @@ Full precision from the eval JSON, mean token log-probability:
 | Zero-shot | 0.165338057277827 | 0.1535281960436965–0.17832890463537054 | 0.2911130794213168 | 0.2760555063478004–0.3070637732506643 | 0.05339805825242718 | 0.038834951456310676–0.0691747572815534 |
 | 4-shot | 0.2911130794213168 | 0.27516976675524063–0.30617065249483316 | 0.5485680543253617 | 0.5311485090050192–0.5653971065839977 | 0.14320388349514562 | 0.12014563106796117–0.16747572815533981 |
 | LoRA, 1 epoch | 0.5893120755831119 | 0.5718925302627694–0.6046648951874816 | 0.8021848243283142 | 0.7886034839090641–0.8160614112784175 | 0.3300970873786408 | 0.29975728155339804–0.3640776699029126 |
+| Qwen2.5-1.5B-Instruct-4bit MLX QLoRA | 0.5674638322999704 | 0.5497416592855033–0.5851786241511662 | 0.7753173900206672 | 0.7608503100088574–0.7891939769707705 | 0.28398058252427183 | 0.25485436893203883–0.3143203883495146 |
 | Paired merchant lookup | 0.5686448184233835 | 0.551225273103041–0.5845881310894597 | — | — | 0.11407766990291263 | 0.09344660194174757–0.13592233009708737 |
 
 The paired lookup is identical in the three eval files and equals the fold-2018 merchant lookup in `results/baselines.json` (top-1 0.5686448184233835, new merchants 0.11407766990291263, n=3387). Lookup has no top-3 in that definition, so those cells are empty. LoRA's mean-logprob top-1 (0.5893120755831119) is above that paired lookup. The two marginal 95% intervals overlap. The same LoRA top-1 is below the fold-2018 character TF-IDF logistic regression (0.6120460584588131). LoRA top-3 is 0.8021848243283142 against that TF-IDF top-3 of 0.8012990847357544. LoRA new-merchant top-1 is 0.3300970873786408 against TF-IDF 0.3058252427184466.
+
+The MLX row is `results/eval_mlx_2018.json` (`measured: true`, `complete: true`, `n_scored` 3387, `fallback_from` empty, model `mlx-community/Qwen2.5-1.5B-Instruct-4bit`). Its cells are the stored floats, not a rounded percent. Mean-logprob top-1 is 0.5674638322999704 (95% CI 0.5497416592855033–0.5851786241511662), top-3 is 0.7753173900206672 (95% CI 0.7608503100088574–0.7891939769707705), and new-merchant top-1 is 0.28398058252427183 (95% CI 0.25485436893203883–0.3143203883495146, n=824). That top-1 is below the 0.5B LoRA top-1 of 0.5893120755831119, below the fold-2018 TF-IDF top-1 of 0.6120460584588131, and just below this file's paired merchant lookup of 0.5686448184233835. The MLX and lookup top-1 intervals overlap. New-merchant top-1 is below the 0.5B LoRA figure 0.3300970873786408 and above the paired lookup 0.11407766990291263. Train wall clock for `python -m mlx_lm lora` is the training log lifetime, 2026-11-11T19:00:36-0500 through 2026-11-11T19:36:29-0500, which is 2153 seconds. Score time is the JSON field `seconds`: 38911.2 (11.488 seconds/example). Peak memory is the maximum `footprint` sample of the train and score processes, taken every 20 seconds: 6181 MB at 2026-11-12T03:43:27Z during scoring. `mlx-lm` Version: 0.32.2. Hardware recorded in the JSON: macOS-27.2-arm64-arm-64bit, 8 CPU cores, no CUDA, `ram_gb_memtotal` null.
 
 On the completed prediction files, mean-logprob ranking used 2 account names in zero-shot (Catering Supplies 1,755; Care Payments 1,632) and 8 names in 4-shot (Travelling Expenses 1,497; Furniture and Equipment 1,319; Catering Supplies 540; Expenses and Allowances 12; Office Expenses 10; Publicity and Promotion 4; Transport and Vehicles 3; Repairs and Maintenance 2). After LoRA it used 12 of the 19 names (Travelling Expenses 828; Furniture and Equipment 692; Catering Supplies 579; Expenses and Allowances 323; Care Payments 299; Publicity and Promotion 192; Fees and Charges 146; ICT 141; Legal and Professional Fees 65; Office Expenses 46; Staff Training 38; Library Equipment 38).
 
@@ -79,10 +83,10 @@ Fold 2018 paired baselines, same 3,387 lines (these match TrustGate's 2018 row e
 ## What was not measured
 
 - QLoRA on CUDA. This machine has no CUDA device. The bitsandbytes path is implemented and used only when CUDA and bitsandbytes are both available.
-- The MLX run below. No Mac accuracy, loss, or runtime from that path is in this repository.
+- A Mac loss curve inside the eval JSON. Training loss stayed in `results/mlx_fold_2018_qwen25-15b-instruct-4bit.log`. Accuracy, score time, and the sampled peak footprint are in the MLX row above.
 - The five-fold rolling language-model run on the PyTorch path (11,756 lines, five adapters).
 - `BAAI/bge-small-en-v1.5` and TrustGate's combined TF-IDF + embedding model. The 62.4% / 40.7% / 82.9% figures above are citations.
-- Any model larger than Qwen2.5-0.5B on this machine. The MLX path is aimed at a 4-bit 1.5B and has not been executed.
+- Any model larger than the 4-bit 1.5B that this Mac run actually trained. `fallback_from` is empty, so the 0.5B fallback did not train.
 - Dollar cost. No invoice was recorded. Cost = measured GPU hours × the provider's price at the time you rent it. Do not quote a dollar figure from this repository.
 - A second training epoch, a different rank, or early stopping on the test fold. The run is the config in `configs/cpu_fold2018.json`, once.
 
@@ -132,11 +136,11 @@ That trains two epochs on each of the five folds, into `results/adapters_rolling
 
 ### MLX on an M2 MacBook Air (8GB, fanless)
 
-Not run. This development machine is Linux x86_64, and MLX does not install there. There is no Mac loss, accuracy, tokens/second, or wall time in this repository. Do not fill one in.
+Run on this Mac. The measured fold-2018 row is above: model `mlx-community/Qwen2.5-1.5B-Instruct-4bit`, top-1 0.5674638322999704, top-3 0.7753173900206672, new-merchant top-1 0.28398058252427183, train wall clock 2153 seconds, score time 38911.2 seconds, peak sampled footprint 6181 MB. The numbers are copied from `results/eval_mlx_2018.json` and from the training-log timestamps and `footprint` samples named in that row.
 
 The path is QLoRA in the sense MLX-LM uses: a 4-bit `mlx-community` base plus a LoRA adapter (`mlx_lm.lora`). The training rows are the same TrustGate fold as the PyTorch run. Fold 2018 trains on all 3,095 lines from 2017 and scores all 3,387 lines from 2018. Ranking is mean token log-probability over the training-year account list, with the same top-1, top-3, new-merchant, and bootstrap fields as `results/eval_qwen05_lora_2018.json`. `valid.jsonl` is 128 of those training rows copied out so mlx-lm can print a validation loss. They are not removed from `train.jsonl`, and the test year is in neither file. Do not quote that validation loss as the result.
 
-Checked here, on Linux: the JSONL export (3,095 train rows, no 2018 ids), the YAML (batch 1, 8 LoRA layers, rank 8, sequence length 256, gradient checkpointing, prompt masking), the out-of-memory detector, and the log-probability arithmetic. Not checked: loading MLX, the Metal training loop, adapter scoring, and the 1.5B-to-0.5B fallback actually catching an allocation failure.
+Checked earlier on Linux: the JSONL export (3,095 train rows, no 2018 ids), the YAML (batch 1, 8 LoRA layers, rank 8, sequence length 256, gradient checkpointing, prompt masking), the out-of-memory detector, and the log-probability arithmetic. This Mac then loaded MLX, trained the 1.5B adapter, and scored the fold. The 1.5B run did not hit the out-of-memory fallback.
 
 Use Python 3.11 or 3.12. The system Python on macOS is often 3.9, which is too old. This command is the one to run on the Air:
 
@@ -153,9 +157,9 @@ PYTHON=python3.12 make mlx-rolling
 
 That trains five adapters (3,095 + 6,482 + 9,864 + 12,007 + 13,917 steps at batch size 1) and writes `results/eval_mlx_2018_2019_2020_2021_2022.json`.
 
-Defaults, in `configs/mlx_m2_8gb.yaml`: `mlx-community/Qwen2.5-1.5B-Instruct-4bit`, batch size 1, gradient checkpointing, max sequence length 256, LoRA on the last 8 attention projections (`q`, `k`, `v`, `o`) at rank 8, AdamW, learning rate 1e-4, one pass over the training rows, seed 0. With the Qwen2.5 tokenizer on this machine, the longest training chat across all five folds is 199 tokens (186 tokens for 2017 alone), so 256 does not cut off the account name. The export script checks that again when `transformers` is installed and refuses to train if a chat would be truncated. `requirements-mlx.txt` pins `mlx-lm[train]==0.32.2`. If that pin is rejected, the script installs `mlx-lm[train]` unpinned and prints the version. Record that version next to the result. It was not installed here.
+Defaults, in `configs/mlx_m2_8gb.yaml`: `mlx-community/Qwen2.5-1.5B-Instruct-4bit`, batch size 1, gradient checkpointing, max sequence length 256, LoRA on the last 8 attention projections (`q`, `k`, `v`, `o`) at rank 8, AdamW, learning rate 1e-4, one pass over the training rows, seed 0. With the Qwen2.5 tokenizer on this machine, the longest training chat across all five folds is 199 tokens (186 tokens for 2017 alone), so 256 does not cut off the account name. The export script checks that again when `transformers` is installed and refuses to train if a chat would be truncated. `requirements-mlx.txt` pins `mlx-lm[train]==0.32.2`. This Mac installed that pin. The run printed `mlx-lm Version: 0.32.2`.
 
-The Air is fanless. After a few minutes the chassis warms up and Metal slows down, then slows further if the machine is on battery or other apps are open. Plug it in, close browsers, and let the run finish; a partial `results/predictions/mlx_*.jsonl` resumes. No duration is stated here because none was measured. The result JSON's `seconds` field is the measured scoring time once the Mac run exists, and the training log under `results/mlx_fold_*.log` is the measured training time.
+The Air is fanless. After a few minutes the chassis warms up and Metal slows down. This run was on AC power. A partial `results/predictions/mlx_*.jsonl` resumes. Train wall clock and score time for the completed run are in the measured row above. The result JSON's `seconds` field is the scoring time, 38911.2. The training log under `results/mlx_fold_*.log` is gitignored; its file lifetime is the 2153-second train wall clock.
 
 ## Data
 

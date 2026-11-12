@@ -1,0 +1,221 @@
+{
+  "measured": true,
+  "complete": true,
+  "mlx_executed": true,
+  "untested_on_linux_vm": false,
+  "tag": "mlx_2018",
+  "model_name": "mlx-community/Qwen2.5-1.5B-Instruct-4bit",
+  "fallback_from": "",
+  "adapter_dir": "results/mlx_adapters/active",
+  "use_adapter": true,
+  "shots": 0,
+  "folds": [
+    2018
+  ],
+  "ranking": "mean_token_logprob",
+  "secondary_ranking": "sum_token_logprob",
+  "dtype": "4bit",
+  "quantization": "mlx 4-bit base + LoRA (QLoRA as defined by mlx-lm)",
+  "max_eval": 0,
+  "seed": 0,
+  "n_scored": 3387,
+  "n_label_not_in_candidates": 0,
+  "metrics": {
+    "n": 3387,
+    "top1": 0.5674638322999704,
+    "top1_ci": [
+      0.5497416592855033,
+      0.5851786241511662
+    ],
+    "top3": 0.7753173900206672,
+    "top3_ci": [
+      0.7608503100088574,
+      0.7891939769707705
+    ],
+    "n_seen_merchants": 2563,
+    "n_new_merchants": 824,
+    "top1_seen_merchants": 0.6586031993757315,
+    "top1_seen_ci": [
+      0.640645727662895,
+      0.6777409285992976
+    ],
+    "top1_new_merchants": 0.28398058252427183,
+    "top1_new_ci": [
+      0.25485436893203883,
+      0.3143203883495146
+    ],
+    "top3_seen_merchants": 0.8349590323839251,
+    "top3_new_merchants": 0.5898058252427184,
+    "top3_new_ci": [
+      0.5570388349514563,
+      0.6225728155339806
+    ],
+    "macro_f1": 0.26572968680041514
+  },
+  "metrics_sum_logprob": {
+    "n": 3387,
+    "top1": 0.5509300265721878,
+    "top1_ci": [
+      0.5341009743135519,
+      0.568054325361677
+    ],
+    "top3": 0.7717744316504281,
+    "top3_ci": [
+      0.7570047239444936,
+      0.7859462651313847
+    ],
+    "n_seen_merchants": 2563,
+    "n_new_merchants": 824,
+    "top1_seen_merchants": 0.6398751463129145,
+    "top1_seen_ci": [
+      0.6211470932500975,
+      0.6589933671478736
+    ],
+    "top1_new_merchants": 0.27427184466019416,
+    "top1_new_ci": [
+      0.24393203883495146,
+      0.3034283980582522
+    ],
+    "top3_seen_merchants": 0.8314475224346469,
+    "top3_new_merchants": 0.5861650485436893,
+    "top3_new_ci": [
+      0.5521844660194175,
+      0.6189320388349514
+    ],
+    "macro_f1": 0.2693661448640301
+  },
+  "paired_merchant_lookup": {
+    "n": 3387,
+    "top1": 0.5686448184233835,
+    "top1_ci": [
+      0.5515205196338943,
+      0.584883377620313
+    ],
+    "top3": null,
+    "top3_ci": null,
+    "n_seen_merchants": 2563,
+    "n_new_merchants": 824,
+    "top1_seen_merchants": 0.7147873585641826,
+    "top1_seen_ci": [
+      0.6976102223956301,
+      0.732354662504877
+    ],
+    "top1_new_merchants": 0.11407766990291263,
+    "top1_new_ci": [
+      0.09223300970873786,
+      0.13592233009708737
+    ],
+    "top3_seen_merchants": null,
+    "top3_new_merchants": null,
+    "top3_new_ci": null,
+    "macro_f1": 0.3333493999476478
+  },
+  "per_fold": [
+    {
+      "year": 2018,
+      "n_planned": 3387,
+      "n_scored": 3387,
+      "complete": true,
+      "n_train": 3095,
+      "n_candidates": 19,
+      "metrics": {
+        "n": 3387,
+        "top1": 0.5674638322999704,
+        "top1_ci": [
+          0.5497416592855033,
+          0.5851786241511662
+        ],
+        "top3": 0.7753173900206672,
+        "top3_ci": [
+          0.7608503100088574,
+          0.7891939769707705
+        ],
+        "n_seen_merchants": 2563,
+        "n_new_merchants": 824,
+        "top1_seen_merchants": 0.6586031993757315,
+        "top1_seen_ci": [
+          0.640645727662895,
+          0.6777409285992976
+        ],
+        "top1_new_merchants": 0.28398058252427183,
+        "top1_new_ci": [
+          0.25485436893203883,
+          0.3143203883495146
+        ],
+        "top3_seen_merchants": 0.8349590323839251,
+        "top3_new_merchants": 0.5898058252427184,
+        "top3_new_ci": [
+          0.5570388349514563,
+          0.6225728155339806
+        ],
+        "macro_f1": 0.26572968680041514
+      },
+      "paired_merchant_lookup": {
+        "n": 3387,
+        "top1": 0.5686448184233835,
+        "top1_ci": [
+          0.5515205196338943,
+          0.584883377620313
+        ],
+        "top3": null,
+        "top3_ci": null,
+        "n_seen_merchants": 2563,
+        "n_new_merchants": 824,
+        "top1_seen_merchants": 0.7147873585641826,
+        "top1_seen_ci": [
+          0.6976102223956301,
+          0.732354662504877
+        ],
+        "top1_new_merchants": 0.11407766990291263,
+        "top1_new_ci": [
+          0.09223300970873786,
+          0.13592233009708737
+        ],
+        "top3_seen_merchants": null,
+        "top3_new_merchants": null,
+        "top3_new_ci": null,
+        "macro_f1": 0.3333493999476478
+      }
+    }
+  ],
+  "format_check": {
+    "n": 0,
+    "exact_account": null,
+    "in_candidate_list": null,
+    "error": null,
+    "rows": [],
+    "note": "Free generation was not run. The headline is closed-set mean token log-probability."
+  },
+  "seconds": 38911.2,
+  "seconds_per_example": 11.488,
+  "hardware": {
+    "platform": "macOS-27.2-arm64-arm-64bit",
+    "processor": "arm",
+    "cpu_count": 8,
+    "ram_gb_memtotal": null,
+    "gpu": null,
+    "cuda": false,
+    "torch_error": "No module named 'torch'",
+    "machine": "arm64",
+    "system": "Darwin"
+  },
+  "cost_usd": null,
+  "cost_note": "Not measured. This is a local Mac run; no invoice exists.",
+  "protocol": {
+    "features": [
+      "merchant_raw",
+      "department",
+      "service_category",
+      "amount"
+    ],
+    "excluded": [
+      "merchant_category"
+    ],
+    "candidates": "accounts observed in training years of the fold, alphabetical",
+    "split": "TrustGate rolling statement_year; only the folds listed above were scored",
+    "train_rows": "every labelled line with statement_year < test year, including the valid.jsonl subset",
+    "primary_model": "mlx-community/Qwen2.5-1.5B-Instruct-4bit",
+    "fallback_model": "mlx-community/Qwen2.5-0.5B-Instruct-4bit"
+  },
+  "example_prompt": "Allowed accounts:\n- Care Payments\n- Catering Supplies\n- Cleaning\n- Clothing and Uniforms\n- Expenses and Allowances\n- Fees and Charges\n- Fuel\n- Furniture and Equipment\n- ICT\n- Legal and Professional Fees\n- Library Equipment\n- Office Expenses\n- Other\n- Publicity and Promotion\n- Repairs and Maintenance\n- Staff Training\n- Third Party Payments\n- Transport and Vehicles\n- Travelling Expenses\n\nCode this transaction.\nMerchant: CARREFOUR MARKET ST H\nDepartment: Services to People\nService: Adult Social Care\nAmount GBP: 14.49"
+}
