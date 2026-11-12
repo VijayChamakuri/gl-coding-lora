@@ -1,104 +1,121 @@
+![Python](https://img.shields.io/badge/Python-blue?logo=python&logoColor=white)
+![MLX](https://img.shields.io/badge/MLX-QLoRA-0f766e)
+![Qwen2.5](https://img.shields.io/badge/Qwen2.5-0.5B%20%2F%201.5B-0f766e)
+![MIT](https://img.shields.io/badge/license-MIT-lightgrey)
+![8GB M2 Air](https://img.shields.io/badge/runs_on-8GB%20M2%20Air-0f766e)
+
 ![GL-LoRA](docs/img/hero.png)
 
-![Python, MLX, Qwen2.5, MIT, 8GB M2](docs/img/badges.png)
+Finance staff type a general-ledger account on every council card purchase. A rule that copies the last account for that merchant works until the merchant is new. Then the rule has nothing to copy.
 
-Finance staff type a general-ledger account on every council card purchase. A simple rule, "this merchant was this account last time," works until the merchant is new. Then the rule has nothing to copy.
-
-On the 824 merchants that did not appear in 2017, a small LoRA model picks the booked account 33.0% of the time (30.0–36.4). The merchant rule picks it 11.4% of the time (9.2–13.6). That is about three times the hit rate, on the same 3,387 card lines from 2018.
+On the 824 merchants that did not appear in 2017, LoRA 0.5B picks the booked account 33.0% of the time (30.0–36.4). Merchant lookup picks it 11.4% of the time (9.2–13.6). Both rates are on the same 3,387 card lines from 2018.
 
 ## Findings
 
-- New merchants are the gap that matters. LoRA 0.5B reaches 33.0% (30.0–36.4). Lookup stays at 11.4% (9.2–13.6). The word-pattern model (TF-IDF) reaches 30.6% and the results file stores no interval for that row.
-- On all 3,387 lines, LoRA 0.5B is 58.9% (57.2–60.5). Lookup is 56.9% (55.2–58.5). TF-IDF is 61.2%, again with no stored interval. The two language-model intervals overlap the lookup interval.
-- The same 0.5B model, before any training, scores 16.5% (15.4–17.8). Four worked examples raise it to 29.1% (27.5–30.6). LoRA then reaches 58.9%.
-- A 4-bit 1.5B model trained on this 8GB Mac scores 56.7% (55.0–58.5) overall and 28.4% (25.5–31.4) on new merchants. It does not beat the smaller LoRA or TF-IDF. Guessing that the 4-bit weights, or training only eight layers, caused that is untested.
+- New merchants: LoRA 0.5B is 33.0% (30.0–36.4). Lookup is 11.4% (9.2–13.6). TF-IDF is 30.6%.
+- All 3,387 lines: LoRA 0.5B is 58.9% (57.2–60.5). Lookup is 56.9% (55.2–58.5). TF-IDF is 61.2%.
+- The 4-bit 1.5B model is 56.7% (55.0–58.5) overall and 28.4% (25.5–31.4) on new merchants. It does not beat the 0.5B LoRA or TF-IDF.
 
 ![Top-1 and new-merchant scoreboard](docs/img/scoreboard.png)
 
-Teal is the 0.5B LoRA. Every other bar is grey. The right-hand chart is the new-merchant result above.
+Teal is the 0.5B LoRA. Every other bar is grey.
 
-![From no examples to LoRA](docs/img/progression.png)
+## Ablation
 
-Same base model. The three bars are the stored top-1 rates 16.5%, 29.1%, and 58.9%.
+Same 0.5B model, three setups. Zero-shot is 16.5% (15.4–17.8). Four examples is 29.1% (27.5–30.6). LoRA is 58.9% (57.2–60.5).
 
-## How one purchase is coded
+![Ablation: zero-shot, four examples, then LoRA](docs/img/progression.png)
 
-The model only sees the merchant, the department, the service, and the amount. It does not see the procurement category, because staff filled that in with the account.
+## One purchase
+
+The model sees the merchant, the department, the service, and the amount. It does not see the procurement category. Staff filled that in with the account.
 
 ![Carrefour line, the account list, and the saved top 3](docs/img/flow.png)
 
-The booked account on this line is Expenses and Allowances. It is first in the saved top 3. The merchant rule, which had never seen this shop, answered Travelling Expenses. That comparison is on the green card below.
+The booked account is Expenses and Allowances. It is first in the saved 4-bit top 3. Lookup, which had never seen this shop, answered Travelling Expenses. `make demo` runs the committed 0.5B adapter, not this 4-bit ranking. The three outcome cards are in [docs/charts.md](docs/charts.md).
 
-```mermaid
-flowchart LR
-  cards[Card line] --> split[Train on 2017 only]
-  split --> ask[Choose from the 2017 account list]
-  ask --> adapt[LoRA on a small Qwen model]
-  adapt --> rank[Rank those account names]
-  rank --> out[Booked or not]
+## How it works
+
+The scorer does not let the model type a free answer. It ranks the 19 accounts from the 2017 list (`n_candidates` in [results/eval_qwen05_lora_2018.json](results/eval_qwen05_lora_2018.json)). For each name it takes the mean token log-probability of that name as the reply. The highest mean wins.
+
+[glcode/score.py](glcode/score.py) also returns the sum of those log-probabilities. The sum is not the headline. Account names differ in length. A sum would favour a short name such as ICT over Legal and Professional Fees. The mean was chosen before any language-model result was measured.
+
+```python
+means = sums / counts
+return sums.tolist(), means.tolist()
 ```
 
-## The same comparison, a few more cuts
+## LoRA and QLoRA
 
-![Top-1 with intervals where the file stored them](docs/img/top1-ci.png)
+| | LoRA | QLoRA |
+|---|---|---|
+| Config | [configs/cpu_fold2018.json](configs/cpu_fold2018.json) | [configs/mlx_m2_8gb.yaml](configs/mlx_m2_8gb.yaml) |
+| Base | `Qwen/Qwen2.5-0.5B-Instruct` | `mlx-community/Qwen2.5-1.5B-Instruct-4bit` |
+| Precision | float32, `qlora: no` | 4-bit base plus LoRA |
+| Adapter | r 16, alpha 32, dropout 0.05, `all-linear` | rank 8, scale 20, dropout 0, attention q/k/v/o, 8 layers |
+| Length and batch | 512 tokens, batch 1, grad accum 8, checkpoint off | 256 tokens, batch 1, grad checkpoint on |
+| Learning rate | 0.0002 | 1.0e-4 |
 
-Teal is again the 0.5B LoRA, 58.9% (57.2–60.5). The TF-IDF bar has no cap because that 2018 row has no interval.
+Float32 is there because bf16 did not match a full-sequence forward to about 1e-4. That note is in [glcode/score.py](glcode/score.py).
 
-![Seen merchants and new merchants](docs/img/new-vs-seen.png)
+The 8 layers, attention-only targets, sequence length 256, batch size 1, and gradient checkpointing are the memory-safe defaults for an 8GB M2 MacBook Air in [configs/mlx_m2_8gb.yaml](configs/mlx_m2_8gb.yaml). If the 1.5B model runs out of memory, [scripts/run_mlx.sh](scripts/run_mlx.sh) falls back to the 0.5B 4-bit model.
 
-For the teal pair, the left bar is a merchant the model could have memorized and the right bar is a new one. TF-IDF is missing here: its 2018 row stores a new-merchant rate and does not store a seen-merchant rate.
+## Evaluation
 
-![How often the booked account is in the first one, two, or three names](docs/img/topk.png)
+Training lines are 2017. The test is the 3,387 labelled lines from 2018. The prompt drops merchant category, because staff assigned that field with the label. [glcode/prompts.py](glcode/prompts.py) records that choice.
 
-The teal line is the 0.5B LoRA. At three names it holds the booked account 80.2% of the time (78.9–81.6). The files do not store a fourth name, so the lines stop at 3.
+The intervals are bootstrap 95% CIs from [glcode/metrics.py](glcode/metrics.py): 2,000 resamples, seed 0, percentiles 2.5 and 97.5.
 
-![Loss the 4-bit trainer printed](docs/img/train-loss.png)
+## Limitations
 
-This is the training log, not the 2018 score. The printed numbers are rounded by the logger. Detail is in `docs/NOTES.md`.
+- Language-model scores exist for 2018 only.
+- The 2018 TF-IDF row in [results/baselines.json](results/baselines.json) has no interval.
+- On all lines, the 0.5B LoRA interval overlaps the lookup interval.
+- Whether 4-bit weights or the eight trained layers explain the 1.5B result was not tested.
+- Saved predictions keep three names, so the rank chart stops at 3.
 
-![Where the 4-bit model confuses the six largest accounts](docs/img/confusion.png)
-
-Catering is usually kept. Expenses and Allowances is often called Travelling Expenses. The counts are in the cells.
-
-## Three outcomes
-
-These are the first correct row, the first miss on a known merchant, and the first miss on a new merchant, in purchase-id order. They are not a hand-picked set.
-
-![Correct, near miss, and a clear miss](docs/img/error-cards.png)
-
-## Choices
-
-The test year is 2018 and the training year is 2017. The model never sees a later purchase while it learns, so a good score is not a leak from the future.
-
-It has to pick from the account list used in 2017. We rank those names. A free-typed answer is a different test, and it is not the number in the scoreboard. For the 4-bit model that free-text check was not run.
-
-Lookup is the rule a person would try first: remember the merchant. It collapses on a new shop, which is why the right-hand chart exists. TF-IDF is the word-pattern baseline on the same four fields. It is the bar the LoRA still has to clear.
+Longer notes, including the exact Mac samples, are in [docs/NOTES.md](docs/NOTES.md).
 
 ## The Mac
 
+The 1.5B run had to fit an 8GB M2 MacBook Air. The config uses batch 1, sequence length 256, LoRA on the last 8 attention projections, and gradient checkpointing.
+
 ![Train time, peak memory, and seconds per line](docs/img/laptop.png)
 
-2152.5 seconds is the training log's lifetime. 6181.0 MB is the highest process footprint sample. 11.488 seconds is the stored time per scored line. Sampling notes are in `docs/NOTES.md`.
+Training took ~36 min. Peak sampled footprint was 6.2 GB. Scoring took 11.5 s per line. The unrounded log figures are in [docs/NOTES.md](docs/NOTES.md).
+
+## What I learned
+
+- Lookup has nothing to copy for a new merchant. That gap is 11.4% versus 33.0% for the 0.5B LoRA.
+- Four examples move the same base model from 16.5% to 29.1%. The adapter reaches 58.9%.
+- TF-IDF still leads on the full year, at 61.2%.
+- A larger 4-bit model on this Mac did not beat the smaller float32 LoRA.
 
 ## What I would do next
 
-Score the other four years, 2019 through 2022, with the same rule. None of those language-model scores exist yet.
+Score 2019 through 2022 the same way. Those language-model scores are not in the repo.
 
-Combine the word-pattern model with the LoRA instead of treating them as rivals. That ensemble was not built.
+Combine TF-IDF with the LoRA. That ensemble was not built.
 
-Let the model abstain when the top name is close to the second. No calibration or abstention number is in the files.
+Let the model pass when the top name is close to the second. No calibration number is in the files.
 
 ## Run it
 
-The 0.5B training run, measured on a Linux machine with 4 cores, 15.63 GB of RAM, and no GPU, took 4060.1 seconds. See `results/adapters/fold_2018/train_manifest.json`.
+`make test` runs pytest. The six files are [tests/test_baselines_published.py](tests/test_baselines_published.py), [tests/test_mlx_export.py](tests/test_mlx_export.py), [tests/test_parse.py](tests/test_parse.py), [tests/test_prompts_and_metrics.py](tests/test_prompts_and_metrics.py), [tests/test_reference_and_split.py](tests/test_reference_and_split.py), and [tests/test_score_fp32.py](tests/test_score_fp32.py).
+
+The 0.5B training run, on a Linux machine with 4 cores, 15.63 GB of RAM, and no GPU, took 4060.1 seconds. See [results/adapters/fold_2018/train_manifest.json](results/adapters/fold_2018/train_manifest.json).
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python scripts/prepare_data.py --check
-python scripts/train_lora.py --config configs/cpu_fold2018.json
-python scripts/evaluate.py --config configs/eval_lora_2018.json
+make test
+make demo
 ```
+
+`make demo` scores one committed-adapter purchase, card line `2018-01_f41af6e3.csv:10`. It prints the account list and the top 3. The weights are [results/adapters/fold_2018](results/adapters/fold_2018).
+
+The 4-bit weights are not in git. Run `make mlx` before using that path.
 
 Charts:
 
@@ -107,33 +124,29 @@ python3 -m pip install matplotlib
 PYTHON=python3 make figures
 ```
 
-One purchase through the 4-bit adapter already trained on this Mac. The weights are local, from `make mlx`, and are not in git. The command prints the account list, the Carrefour line, and the top 3.
-
-```bash
-make demo
-```
-
-## Limits
-
-- Language-model scores exist for 2018 only. The later years were not scored.
-- The 4-bit 1.5B model did not beat the 0.5B LoRA or TF-IDF. An explanation from the bit width or the eight trained layers is untested.
-- The 2018 TF-IDF row has no interval in `results/baselines.json`.
-- Saved predictions keep three names, so the rank chart stops at 3.
-- No invoice was recorded, and the trainer's validation loss is not the test score.
-
 ## Map
 
 | Path | What it is |
 |---|---|
-| `glcode/` | The split, the prompts, and the scoring |
-| `scripts/train_lora.py` | CPU LoRA |
-| `scripts/demo_one.py` | One purchase, local 4-bit weights |
-| `scripts/make_figures.py` | The pictures in `docs/img/` |
-| `results/eval_*_2018.json` | The measured scores |
-| `results/baselines.json` | Lookup and TF-IDF |
-| `docs/NOTES.md` | Provenance, the Mac sampling notes, the logger caveat |
-| `docs/img/` | Charts |
+| [glcode/score.py](glcode/score.py) | Mean-token ranking |
+| [glcode/metrics.py](glcode/metrics.py) | Bootstrap intervals |
+| [glcode/prompts.py](glcode/prompts.py) | Prompt, merchant category left out |
+| [glcode/train.py](glcode/train.py) | CPU LoRA training |
+| [glcode/evaluate.py](glcode/evaluate.py) | CPU scoring |
+| [glcode/mlx_data.py](glcode/mlx_data.py) | 8GB QLoRA export and config |
+| [glcode/mlx_eval.py](glcode/mlx_eval.py) | 4-bit scoring |
+| [scripts/train_lora.py](scripts/train_lora.py) | CPU train entry point |
+| [scripts/demo_one.py](scripts/demo_one.py) | One purchase, committed 0.5B adapter |
+| [scripts/make_figures.py](scripts/make_figures.py) | Charts in [docs/img/](docs/img) |
+| [configs/cpu_fold2018.json](configs/cpu_fold2018.json) | 0.5B LoRA config |
+| [configs/mlx_m2_8gb.yaml](configs/mlx_m2_8gb.yaml) | 1.5B QLoRA config |
+| [results/eval_qwen05_lora_2018.json](results/eval_qwen05_lora_2018.json) | 0.5B LoRA scores |
+| [results/eval_mlx_2018.json](results/eval_mlx_2018.json) | 4-bit scores |
+| [results/baselines.json](results/baselines.json) | Lookup and TF-IDF |
+| [docs/NOTES.md](docs/NOTES.md) | Provenance, sampling, hedges |
+| [docs/charts.md](docs/charts.md) | The other charts |
+| [tests/](tests) | The pytest suite |
 
 ## Citation
 
-Council purchase-card lines, Open Government Licence v3.0. The account list and the export's provenance are in `docs/NOTES.md`. Models: `Qwen/Qwen2.5-0.5B-Instruct` and `mlx-community/Qwen2.5-1.5B-Instruct-4bit`. This repository is MIT, copyright 2026 Vijay Chamakuri.
+Council purchase-card lines, Open Government Licence v3.0. Provenance is in [docs/NOTES.md](docs/NOTES.md). Models: `Qwen/Qwen2.5-0.5B-Instruct` and `mlx-community/Qwen2.5-1.5B-Instruct-4bit`. This repository is MIT, copyright 2026 Vijay Chamakuri.

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Score one 2018 purchase with the local 4-bit adapter.
+"""Score one 2018 purchase with the committed 0.5B adapter.
 
-The adapter is produced by `make mlx` and is not committed. This script
-prints the live ranking. It does not write a result file.
+The weights are results/adapters/fold_2018/adapter_model.safetensors.
+The 4-bit MLX adapter is not in git. That path needs `make mlx` first.
+This script prints the live ranking. It does not write a result file.
 """
 
 from __future__ import annotations
@@ -13,20 +14,18 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 CARD_ID = "2018-01_f41af6e3.csv:10"
-MODEL = "mlx-community/Qwen2.5-1.5B-Instruct-4bit"
-ADAPTER = Path("results/mlx_adapters/active/fold_2018")
+ADAPTER = Path("results/adapters/fold_2018")
 
 
 def main() -> None:
-    weights = ADAPTER / "adapters.safetensors"
+    weights = ADAPTER / "adapter_model.safetensors"
     if not weights.exists():
-        raise SystemExit(f"missing adapter weights at {weights}. Run make mlx first.")
-    from mlx_lm import load
-
+        raise SystemExit(f"missing adapter weights at {weights}")
     from glcode.dataset import candidate_accounts, iter_folds, load_lines
+    from glcode.evaluate import _load
     from glcode.metrics import rank_labels
-    from glcode.mlx_eval import score_labels
     from glcode.prompts import user_message
+    from glcode.score import completion_logprobs
 
     df = load_lines()
     train = test = None
@@ -44,8 +43,8 @@ def main() -> None:
     prompt = user_message(item, accounts)
     print(prompt)
     print("---")
-    model, tokenizer = load(MODEL, adapter_path=str(ADAPTER))
-    sums, means = score_labels(model, tokenizer, prompt, accounts)
+    tokenizer, model = _load("Qwen/Qwen2.5-0.5B-Instruct", ADAPTER)
+    sums, means = completion_logprobs(model, tokenizer, prompt, accounts)
     ranked = rank_labels(accounts, means, sums)
     print(f"card_line_id: {item.card_line_id}")
     print(f"booked: {item.gl_account}")

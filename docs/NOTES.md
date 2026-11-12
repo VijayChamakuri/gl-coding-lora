@@ -26,6 +26,10 @@ Peak memory is not in the JSON either. A `footprint` sample every 20 seconds, wr
 
 The smaller backup model was not used. The eval JSON leaves `fallback_from` empty.
 
+## Hedges
+
+The 2018 TF-IDF row in `results/baselines.json` has no bootstrap interval. On all 3,387 lines, the 0.5B LoRA interval (57.2–60.5) overlaps the merchant-lookup interval (55.2–58.5). The 4-bit 1.5B model did not beat the 0.5B LoRA or TF-IDF. A guess that 4-bit weights, or training only eight layers, caused that was not tested. `fallback_from` in `results/eval_mlx_2018.json` is empty, so the 0.5B 4-bit backup did not run. Free-typed answers are not the headline score.
+
 ## What `make figures` reads
 
 The top-1 and seen/new charts read the eval JSON files and `results/baselines.json`. The rank chart and the confusion chart read the prediction JSONL files, because the JSON summaries do not store every rank or every pair of booked and predicted accounts. The loss chart reads the training log when it is on disk, and otherwise `results/mlx_train_curve_2018.json`.

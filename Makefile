@@ -36,6 +36,6 @@ mlx-export:
 figures:
 	$(PYTHON) scripts/make_figures.py
 
-# One 2018 purchase through the local 4-bit adapter. The weights are not in git.
+# One 2018 purchase through the committed 0.5B adapter in results/adapters/fold_2018.
 demo:
-	.venv-mlx/bin/python scripts/demo_one.py
+	$(PYTHON) scripts/demo_one.py

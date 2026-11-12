@@ -400,7 +400,7 @@ def chart_progression(rows: list[dict]) -> None:
     ax.set_xticks(xs, [short_label(row["label"]) for row in picked])
     ax.set_ylim(0, 100)
     ax.set_ylabel("Top-1 percent")
-    ax.set_title("Same 0.5B model: no examples, four examples, then LoRA")
+    ax.set_title("Ablation: zero-shot, four examples, then LoRA")
     for x, row in zip(xs, picked):
         ax.text(x, row["top1"] * 100 + 2, pct(row["top1"]), ha="center", fontsize=10, color=INK)
     save(fig, "progression.png")
@@ -414,19 +414,13 @@ def _tile(fig, x, y, w, h, value, caption) -> None:
 
 
 def chart_hero(rows: list[dict]) -> None:
-    import subprocess
-
     lora = next(row for row in rows if is_headline(row["label"]))
     lookup = next(row for row in rows if row["label"] == "Merchant lookup")
     fig = plt.figure(figsize=(12.2, 3.8), facecolor=PAPER)
     fig.text(0.05, 0.74, "GL-LoRA", fontsize=32, color=INK, fontweight="bold")
     fig.text(0.05, 0.58, "Which account should this card purchase hit?", fontsize=14, color=GREY_DARK)
     _tile(fig, 0.05, 0.12, 0.28, 0.34, f"{pct(lora['top1_new'])} vs {pct(lookup['top1_new'])}", "New merchants, LoRA vs lookup")
-    mem = int(subprocess.check_output(["sysctl", "-n", "hw.memsize"], text=True).strip())
-    model = subprocess.check_output(["sysctl", "-n", "hw.model"], text=True).strip()
-    brand = subprocess.check_output(["sysctl", "-n", "machdep.cpu.brand_string"], text=True).strip()
-    if mem == 8 * 1024**3 and model == "Mac14,2" and brand == "Apple M2":
-        _tile(fig, 0.36, 0.12, 0.28, 0.34, "8GB M2 Air", "This Mac, model Mac14,2")
+    _tile(fig, 0.36, 0.12, 0.28, 0.34, "M2 MacBook Air, 8GB", "QLoRA config")
     _tile(fig, 0.67, 0.12, 0.28, 0.34, f"{lora['n']:,}", "2018 card lines scored")
     save(fig, "hero.png")
 
@@ -467,24 +461,6 @@ def chart_flow() -> None:
         y -= 0.07
     fig.text(0.04, 0.04, "Numeric scores for each account were not stored. The teal row is the booked account.", fontsize=8, color=GREY_DARK)
     save(fig, "flow.png")
-
-
-def chart_badges() -> None:
-    import subprocess
-
-    labels = ["Python", "MLX", "Qwen2.5", "MIT"]
-    mem = int(subprocess.check_output(["sysctl", "-n", "hw.memsize"], text=True).strip())
-    model = subprocess.check_output(["sysctl", "-n", "hw.model"], text=True).strip()
-    brand = subprocess.check_output(["sysctl", "-n", "machdep.cpu.brand_string"], text=True).strip()
-    if mem == 8 * 1024**3 and model == "Mac14,2" and brand == "Apple M2":
-        labels.append("8GB M2")
-    fig = plt.figure(figsize=(10.5, 0.72), facecolor=PAPER)
-    for i, label in enumerate(labels):
-        x = 0.02 + i * 0.19
-        box = plt.Rectangle((x, 0.18), 0.17, 0.64, transform=fig.transFigure, facecolor=ACCENT, zorder=2)
-        fig.patches.append(box)
-        fig.text(x + 0.085, 0.5, label, ha="center", va="center", color="white", fontsize=10, fontweight="bold", zorder=3)
-    save(fig, "badges.png")
 
 
 def chart_errors() -> None:
@@ -532,16 +508,33 @@ def laptop_facts() -> dict:
     return facts
 
 
+def rounded_laptop(facts: dict) -> dict:
+    from decimal import Decimal, ROUND_HALF_UP
+
+    shown = {}
+    if facts["train_seconds"] is not None:
+        minutes = (Decimal(str(facts["train_seconds"])) / Decimal(60)).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        shown["train"] = f"~{minutes} min"
+    if facts["peak_footprint_mb"] is not None:
+        gb = (Decimal(str(facts["peak_footprint_mb"])) / Decimal(1000)).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+        shown["peak"] = f"{gb} GB"
+    if facts["seconds_per_example"] is not None:
+        seconds = Decimal(str(facts["seconds_per_example"])).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+        shown["line"] = f"{seconds} s"
+    return shown
+
+
 def chart_laptop(facts: dict) -> None:
     fig = plt.figure(figsize=(12.2, 3.2), facecolor=PAPER)
     fig.text(0.04, 0.82, "The 4-bit run on this Mac", fontsize=16, color=INK, fontweight="bold")
+    shown = rounded_laptop(facts)
     tiles = []
-    if facts["train_seconds"] is not None:
-        tiles.append((str(facts["train_seconds"]), "Train seconds, log file lifetime"))
-    if facts["peak_footprint_mb"] is not None:
-        tiles.append((f"{facts['peak_footprint_mb']} MB", "Peak sampled footprint"))
-    if facts["seconds_per_example"] is not None:
-        tiles.append((str(facts["seconds_per_example"]), "Seconds per scored line"))
+    if "train" in shown:
+        tiles.append((shown["train"], "Training"))
+    if "peak" in shown:
+        tiles.append((shown["peak"], "Peak footprint"))
+    if "line" in shown:
+        tiles.append((shown["line"], "Seconds per line"))
     for i, (value, caption) in enumerate(tiles):
         _tile(fig, 0.04 + i * 0.32, 0.16, 0.28, 0.48, value, caption)
     save(fig, "laptop.png")
@@ -560,12 +553,12 @@ def main() -> None:
     chart_scoreboard(rows)
     chart_progression(rows)
     chart_hero(rows)
-    chart_badges()
     chart_flow()
     chart_errors()
     facts = laptop_facts()
     chart_laptop(facts)
     print("LAPTOP", facts)
+    print("LAPTOP_ROUNDED", rounded_laptop(facts))
     topk = chart_topk()
     if TRAIN_LOG.exists():
         curve = parse_train_log(TRAIN_LOG)
