@@ -1,3 +1,4 @@
+[![tests](https://img.shields.io/github/actions/workflow/status/VijayChamakuri/gl-coding-lora/tests.yml?branch=main&label=tests)](https://github.com/VijayChamakuri/gl-coding-lora/actions/workflows/tests.yml)
 ![Python](https://img.shields.io/badge/Python-blue?logo=python&logoColor=white)
 ![MLX](https://img.shields.io/badge/MLX-QLoRA-0f766e)
 ![Qwen2.5](https://img.shields.io/badge/Qwen2.5-0.5B%20%2F%201.5B-0f766e)
