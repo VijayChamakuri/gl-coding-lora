@@ -1,4 +1,4 @@
-.PHONY: check baselines test train-cpu eval-cpu mlx mlx-rolling mlx-export
+.PHONY: check baselines test train-cpu eval-cpu mlx mlx-rolling mlx-export figures
 
 PYTHON ?= python3
 
@@ -31,3 +31,7 @@ mlx-rolling:
 # Data export and YAML only. This is the part that runs on Linux.
 mlx-export:
 	PYTHON="$(PYTHON)" bash scripts/run_mlx.sh --export-only
+
+# Charts in docs/img from results/*.json and the prediction JSONL files.
+figures:
+	$(PYTHON) scripts/make_figures.py

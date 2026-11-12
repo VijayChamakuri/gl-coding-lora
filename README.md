@@ -1,185 +1,181 @@
 # GL-LoRA
 
-Fine-tune a small open model with LoRA to predict the general-ledger account on real UK council purchase-card lines, and compare it with the baselines from [TrustGate](https://github.com/VijayChamakuri/trustgate).
+A small Qwen model, trained with LoRA, predicts the general-ledger account on real Stockport council purchase-card lines. The comparison is merchant lookup and character TF-IDF on the same 2018 fold.
 
-The label is the account finance staff booked. The inputs are what a card feed shows: merchant string, department, service, and amount. The council's procurement category is not used. Staff assigned that field with the label, so it leaks the answer (TrustGate's upstream setting, where a category lookup alone is about 90.8%).
+The label is the account finance staff booked. The inputs are the merchant string, department, service, and amount. The council's procurement category is not an input: staff assigned it with the label, and a category lookup alone is about 90.8% in TrustGate's upstream setting.
 
-## Measured results
+On all 3,387 lines of 2018, float32 Qwen2.5-0.5B LoRA is the strongest language-model top-1 in this repo. The 4-bit 1.5B QLoRA run on an 8GB M2 Air did not beat it, and it did not beat character TF-IDF.
 
-Classical baselines were recomputed on the full rolling split (11,756 test lines, statement years 2018–2022). Majority class and merchant lookup match the published TrustGate figures exactly, including the bootstrap intervals. The label ceiling matches exactly. Character TF-IDF logistic regression is one labelled line off the published accuracy (0.609306 here, 0.609221 published).
+## TL;DR
 
-Language-model numbers below are only for **fold 2018** (train on 2017, score 2018). They are not the pooled 11,756-line number. The MLX 4-bit 1.5B QLoRA row is the Mac run in `results/eval_mlx_2018.json`. Dollar cost was not measured.
+Fold 2018 only: train on the 3,095 labelled lines from 2017, score the 3,387 lines from 2018. Language-model numbers are closed-set mean token log-probability. Cells are the stored floats. A dash means that file did not store the interval.
 
-### Card-feed rolling split, pooled 2018–2022
-
-| Model | n | Top-1 | 95% CI | Top-3 | New merchants | New-merchant 95% CI |
-|---|---:|---:|---:|---:|---:|---:|
-| Majority class | 11,756 | 17.0% | 16.3–17.6% | 52.5% micro | 11.4% | 10.3–12.4% |
-| Merchant → account lookup | 11,756 | 54.5% | 53.6–55.4% | — | 15.8% | 14.5–17.0% |
-| Merchant top-3 (defined below) | 11,756 | 54.5% | 53.6–55.4% | 75.2% micro | 15.8% | 14.5–17.0% |
-| Char TF-IDF + logistic regression | 11,756 | 60.9% | 60.0–61.8% | 80.1% micro / 80.7% year-macro | 34.6% | 33.0–36.3% |
-
-Label ceiling on identical card-feed inputs, recomputed: **86.1%**. Same inputs were not always booked to the same account, so no deterministic model can exceed that on this population.
-
-Merchant top-3 is not a TrustGate metric. For a seen merchant it is the merchant's most frequent accounts, padded to three with the global ranking; unseen merchants use department + service, then the global ranking. Majority top-3 means the booked account is one of the three most frequent accounts in the training years. TrustGate's published top-3 is the unweighted mean of the five yearly rates (`top3_year_macro`). Line-weighted top-3 is `top3_micro`.
-
-### Published by TrustGate, not re-run here
-
-Source: `results/real/gl_benchmark.json` at commit `66cf7ab2fb866140a75430415ac94dfa1f1907cb`. Same card-feed rolling split.
-
-| Model | Top-1 | 95% CI | Top-3 (year-macro) | New merchants |
-|---|---:|---:|---:|---:|
-| TF-IDF + `BAAI/bge-small-en-v1.5` + logistic regression | 62.4% | 61.5–63.3% | 82.9% | 40.7% |
-
-TrustGate also reports that, on a **different** window (live months of the autonomy rollout, not the 11,756-line pool), the booked account is in the top 3 **86.4%** of the time. That figure is not comparable to the 82.9% rolling-benchmark top-3.
-
-### Language model, fold 2018 only
-
-`Qwen/Qwen2.5-0.5B-Instruct`, float32. Ranked by mean token log-probability of the assistant completion over the 19 accounts observed in 2017. Closed-set ranking is the headline. Free generation on 20 shuffled rows is reported beside it and is not the accuracy.
-
-<!-- LM_TABLE -->
-Closed-set ranking on all 3,387 lines of 2018, from `results/eval_qwen05_zeroshot_2018.json`, `results/eval_qwen05_fewshot4_2018.json`, and `results/eval_qwen05_lora_2018.json`. Each file has `complete: true` and `measured: true`. The headline is mean token log-probability. Every 2018 label is inside the 19 accounts from 2017 (`n_label_not_in_candidates` = 0). New-merchant rates use the 824 merchants absent from 2017.
-
-| Model | n | Top-1 | 95% CI | Top-3 | Top-3 95% CI | New merchants | New-merchant 95% CI |
+| Model | n | Top-1 | Top-1 95% CI | Top-3 | Top-3 95% CI | New-merchant top-1 | New-merchant 95% CI |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Qwen2.5-0.5B zero-shot | 3,387 | 16.5% | 15.4–17.8% | 29.1% | 27.6–30.7% | 5.3% | 3.9–6.9% |
-| Qwen2.5-0.5B 4-shot | 3,387 | 29.1% | 27.5–30.6% | 54.9% | 53.1–56.5% | 14.3% | 12.0–16.7% |
-| Qwen2.5-0.5B LoRA, 1 epoch | 3,387 | 58.9% | 57.2–60.5% | 80.2% | 78.9–81.6% | 33.0% | 30.0–36.4% |
+| Qwen2.5-0.5B zero-shot | 3,387 | 0.165338057277827 | 0.1535281960436965–0.17832890463537054 | 0.2911130794213168 | 0.2760555063478004–0.3070637732506643 | 0.05339805825242718 | 0.038834951456310676–0.0691747572815534 |
+| Qwen2.5-0.5B 4-shot | 3,387 | 0.2911130794213168 | 0.27516976675524063–0.30617065249483316 | 0.5485680543253617 | 0.5311485090050192–0.5653971065839977 | 0.14320388349514562 | 0.12014563106796117–0.16747572815533981 |
+| Qwen2.5-0.5B LoRA, CPU | 3,387 | 0.5893120755831119 | 0.5718925302627694–0.6046648951874816 | 0.8021848243283142 | 0.7886034839090641–0.8160614112784175 | 0.3300970873786408 | 0.29975728155339804–0.3640776699029126 |
 | Qwen2.5-1.5B-Instruct-4bit MLX QLoRA | 3,387 | 0.5674638322999704 | 0.5497416592855033–0.5851786241511662 | 0.7753173900206672 | 0.7608503100088574–0.7891939769707705 | 0.28398058252427183 | 0.25485436893203883–0.3143203883495146 |
-| Paired merchant lookup (same rows in all three JSON files) | 3,387 | 56.9% | 55.1–58.5% | — | — | 11.4% | 9.3–13.6% |
+| Merchant lookup | 3,387 | 0.5686448184233835 | 0.5515205196338943–0.584883377620313 | — | — | 0.11407766990291263 | 0.09223300970873786–0.13592233009708737 |
+| Char TF-IDF + logistic regression | 3,387 | 0.6120460584588131 | — | 0.8012990847357544 | — | 0.3058252427184466 | — |
 
-Full precision from the eval JSON, mean token log-probability:
+Sources: `results/eval_qwen05_zeroshot_2018.json`, `results/eval_qwen05_fewshot4_2018.json`, `results/eval_qwen05_lora_2018.json`, `results/eval_mlx_2018.json`, and the 2018 `tfidf_logreg` row of `results/baselines.json`. Lookup in the table is the paired lookup stored in the MLX eval file. It matches the 2018 `merchant_lookup` row in `results/baselines.json` (top-1 0.5686448184233835, new merchants 0.11407766990291263). That baseline file's per-year TF-IDF row has no bootstrap interval, so those cells are empty. Lookup has no top-3 in this definition.
 
-| Model | Top-1 | Top-1 95% CI | Top-3 | Top-3 95% CI | New-merchant top-1 | New-merchant 95% CI |
-|---|---:|---:|---:|---:|---:|---:|
-| Zero-shot | 0.165338057277827 | 0.1535281960436965–0.17832890463537054 | 0.2911130794213168 | 0.2760555063478004–0.3070637732506643 | 0.05339805825242718 | 0.038834951456310676–0.0691747572815534 |
-| 4-shot | 0.2911130794213168 | 0.27516976675524063–0.30617065249483316 | 0.5485680543253617 | 0.5311485090050192–0.5653971065839977 | 0.14320388349514562 | 0.12014563106796117–0.16747572815533981 |
-| LoRA, 1 epoch | 0.5893120755831119 | 0.5718925302627694–0.6046648951874816 | 0.8021848243283142 | 0.7886034839090641–0.8160614112784175 | 0.3300970873786408 | 0.29975728155339804–0.3640776699029126 |
-| Qwen2.5-1.5B-Instruct-4bit MLX QLoRA | 0.5674638322999704 | 0.5497416592855033–0.5851786241511662 | 0.7753173900206672 | 0.7608503100088574–0.7891939769707705 | 0.28398058252427183 | 0.25485436893203883–0.3143203883495146 |
-| Paired merchant lookup | 0.5686448184233835 | 0.551225273103041–0.5845881310894597 | — | — | 0.11407766990291263 | 0.09344660194174757–0.13592233009708737 |
+The 1.5B top-1 (0.5674638322999704) is below the 0.5B LoRA top-1 (0.5893120755831119), below fold-2018 TF-IDF (0.6120460584588131), and just below merchant lookup (0.5686448184233835). The 1.5B and lookup top-1 intervals overlap. New-merchant top-1 for the 1.5B model is 0.28398058252427183, against 0.3300970873786408 for 0.5B LoRA and 0.11407766990291263 for lookup. `fallback_from` in the MLX file is empty: the 0.5B fallback did not train.
 
-The paired lookup is identical in the three eval files and equals the fold-2018 merchant lookup in `results/baselines.json` (top-1 0.5686448184233835, new merchants 0.11407766990291263, n=3387). Lookup has no top-3 in that definition, so those cells are empty. LoRA's mean-logprob top-1 (0.5893120755831119) is above that paired lookup. The two marginal 95% intervals overlap. The same LoRA top-1 is below the fold-2018 character TF-IDF logistic regression (0.6120460584588131). LoRA top-3 is 0.8021848243283142 against that TF-IDF top-3 of 0.8012990847357544. LoRA new-merchant top-1 is 0.3300970873786408 against TF-IDF 0.3058252427184466.
+## One transaction
 
-The MLX row is `results/eval_mlx_2018.json` (`measured: true`, `complete: true`, `n_scored` 3387, `fallback_from` empty, model `mlx-community/Qwen2.5-1.5B-Instruct-4bit`). Its cells are the stored floats, not a rounded percent. Mean-logprob top-1 is 0.5674638322999704 (95% CI 0.5497416592855033–0.5851786241511662), top-3 is 0.7753173900206672 (95% CI 0.7608503100088574–0.7891939769707705), and new-merchant top-1 is 0.28398058252427183 (95% CI 0.25485436893203883–0.3143203883495146, n=824). That top-1 is below the 0.5B LoRA top-1 of 0.5893120755831119, below the fold-2018 TF-IDF top-1 of 0.6120460584588131, and just below this file's paired merchant lookup of 0.5686448184233835. The MLX and lookup top-1 intervals overlap. New-merchant top-1 is below the 0.5B LoRA figure 0.3300970873786408 and above the paired lookup 0.11407766990291263. Train wall clock for `python -m mlx_lm lora` is the training log lifetime, 2026-11-11T19:00:36-0500 through 2026-11-11T19:36:29-0500, which is 2153 seconds. Score time is the JSON field `seconds`: 38911.2 (11.488 seconds/example). Peak memory is the maximum `footprint` sample of the train and score processes, taken every 20 seconds: 6181 MB at 2026-11-12T03:43:27Z during scoring. `mlx-lm` Version: 0.32.2. Hardware recorded in the JSON: macOS-27.2-arm64-arm-64bit, 8 CPU cores, no CUDA, `ram_gb_memtotal` null.
+`2018-01_f41af6e3.csv:10`, the first correct MLX row in `card_line_id` order, and the same merchant string as the example prompt stored in `results/eval_mlx_2018.json`.
 
-On the completed prediction files, mean-logprob ranking used 2 account names in zero-shot (Catering Supplies 1,755; Care Payments 1,632) and 8 names in 4-shot (Travelling Expenses 1,497; Furniture and Equipment 1,319; Catering Supplies 540; Expenses and Allowances 12; Office Expenses 10; Publicity and Promotion 4; Transport and Vehicles 3; Repairs and Maintenance 2). After LoRA it used 12 of the 19 names (Travelling Expenses 828; Furniture and Equipment 692; Catering Supplies 579; Expenses and Allowances 323; Care Payments 299; Publicity and Promotion 192; Fees and Charges 146; ICT 141; Legal and Professional Fees 65; Office Expenses 46; Staff Training 38; Library Equipment 38).
+| Field | Value |
+|---|---|
+| Merchant | CARREFOUR MARKET ST H |
+| Department | Services to People |
+| Service | Adult Social Care |
+| Amount | 14.49 GBP |
+| Booked account | Expenses and Allowances |
+| MLX top-1 | Expenses and Allowances |
+| MLX top-3 | Expenses and Allowances, Travelling Expenses, Publicity and Promotion |
+| Seen in 2017 | no |
+| Merchant lookup | Travelling Expenses |
 
-Secondary sum-logprob top-1, stored beside the mean and kept out of the headline: zero-shot 0.07646885149099499, 4-shot 0.2273398287570121, LoRA 0.5934455270150576. Sum-logprob and mean-logprob disagree on zero-shot (0.07646885149099499 against 0.165338057277827) and on 4-shot (0.2273398287570121 against 0.2911130794213168). On LoRA the two top-1 figures are close (0.5934455270150576 against 0.5893120755831119).
+The model ranked the booked account first. Lookup, which has no memory of this merchant, assigned Travelling Expenses.
 
-Format check is free generation on 20 shuffled rows. It is separate from the closed-set accuracy. Zero-shot: 0/20 exact account strings, 1/20 inside the account list. 4-shot: 0/20 exact, 0/20 inside the list. LoRA: 15/20 exact, 20/20 inside the list. `format_check.error` is null in all three files.
+## Pipeline
 
-The adapter at `results/adapters/fold_2018` trained for 4060.1 seconds, 0.762 examples/s, mean example loss 0.275091, on 3,095 rows and 19 accounts, for 1 epoch (387 optimizer steps). Trainable parameters 8,798,208 of 502,830,976. Float32, all-linear LoRA, rank 16, alpha 32, dropout 0.05, seed 0, `stopped_early` false, backend `lora`, `qlora_executed` false. Hardware: Linux x86_64, 4 CPU cores, 15.63 GB RAM, no GPU, torch 2.15.0+cpu. `cost_usd` is null.
+```mermaid
+flowchart LR
+  lines[Stockport labelled lines]
+  split[2017 train, 2018 score]
+  prompt[Chat prompt listing 19 accounts]
+  adapt[LoRA or 4-bit QLoRA]
+  rank[Mean token log-probability]
+  metrics[Top-1, top-3, new merchants]
+  lines --> split --> prompt --> adapt --> rank --> metrics
+```
 
-Scoring the same fold on that machine took 2020.1 s for zero-shot (0.596 s/example), 2814.7 s for 4-shot (0.831 s/example), and 2130.2 s for the adapter (0.629 s/example). Eval `cost_usd` is null.
-<!-- /LM_TABLE -->
+`valid.jsonl` is 128 training rows copied out so mlx-lm can print a validation loss. Those rows stay in `train.jsonl`. The 2018 lines are in neither file. Do not quote that validation loss as the test result.
 
-Fold 2018 paired baselines, same 3,387 lines (these match TrustGate's 2018 row exactly):
+## Charts
 
-| Model | Top-1 | Top-3 | New merchants (n=824) |
-|---|---:|---:|---:|
-| Merchant lookup | 56.9% | — | 11.4% |
-| Char TF-IDF + logistic regression | 61.2% | 80.1% | 30.6% |
+`make figures` reads the eval JSON files, the prediction JSONL, `results/baselines.json`, and `results/mlx_train_curve_2018.json`.
 
-## What was not measured
+![Fold 2018 top-1](docs/img/top1-ci.png)
 
-- QLoRA on CUDA. This machine has no CUDA device. The bitsandbytes path is implemented and used only when CUDA and bitsandbytes are both available.
-- A Mac loss curve inside the eval JSON. Training loss stayed in `results/mlx_fold_2018_qwen25-15b-instruct-4bit.log`. Accuracy, score time, and the sampled peak footprint are in the MLX row above.
-- The five-fold rolling language-model run on the PyTorch path (11,756 lines, five adapters).
-- `BAAI/bge-small-en-v1.5` and TrustGate's combined TF-IDF + embedding model. The 62.4% / 40.7% / 82.9% figures above are citations.
-- Any model larger than the 4-bit 1.5B that this Mac run actually trained. `fallback_from` is empty, so the 0.5B fallback did not train.
-- Dollar cost. No invoice was recorded. Cost = measured GPU hours × the provider's price at the time you rent it. Do not quote a dollar figure from this repository.
-- A second training epoch, a different rank, or early stopping on the test fold. The run is the config in `configs/cpu_fold2018.json`, once.
+Caps are the stored 95% intervals. The TF-IDF bar has no cap because `results/baselines.json` does not store one for the 2018 year row.
 
-## Protocol
+![Seen and new merchants](docs/img/new-vs-seen.png)
 
-The labelled file is the JudgeGate export of TrustGate's dbt model `int_stockport__labelled_lines`: 14,851 lines, 21 accounts, January 2017–June 2022. `scripts/prepare_data.py --download` fetches the 111 monthly files from data.gov.uk and rebuilds that table. The rebuild matches the export on content and on `card_line_id` (see `results/rebuild_report.json`). One source date is `28.02.20`; DuckDB's `%Y` parsed it as year 0020, and the parser does the same.
+TF-IDF is absent here. Its 2018 year row stores `accuracy_new_merchants` (0.3058252427184466) and does not store a seen-merchant top-1.
 
-For each test year *t* in 2018–2022 the classical models train on statement years before *t* and score year *t*. The year is the file's statement month, not the purchase date. Bootstrap intervals are 2,000 line resamples, seed 0, percentiles 2.5 and 97.5, the same procedure as TrustGate.
+![Top-k from stored lists](docs/img/topk.png)
 
-The language model uses one fold of that split: train on all 3,095 labelled lines from 2017, score all 3,387 lines from 2018. The prompt lists the 19 accounts that occur in 2017 (`COVID 19` and `Activities and Events` do not). No 2018 label falls outside that list. Department or service, when missing, is the word "unknown". Merchant category is not in the prompt.
+k = 2 is computed from the stored top-3 list. Ranks past 3 were not saved, so the curve stops at 3.
 
-Few-shot examples are four training-year lines: the earliest line of each of the four most common training accounts. They are not used when training or when scoring the adapter. The adapter is trained on the account name as the assistant message, loss only on that completion.
+| Model | k = 1 | k = 2 | k = 3 | n |
+|---|---:|---:|---:|---:|
+| Zero-shot 0.5B | 0.165338057277827 | 0.26956008266902864 | 0.2911130794213168 | 3387 |
+| 4-shot 0.5B | 0.2911130794213168 | 0.42781222320637735 | 0.5485680543253617 | 3387 |
+| LoRA 0.5B CPU | 0.5893120755831119 | 0.7260112193681725 | 0.8021848243283142 | 3387 |
+| LoRA 1.5B MLX | 0.5674638322999704 | 0.70859167404783 | 0.7753173900206672 | 3387 |
 
-Ranking uses the mean log-probability of the completion tokens (account name plus the chat template's end-of-turn tokens). The sum of those log-probabilities is stored as a secondary metric because it favours short names such as `ICT`. The choice of the mean was made before any language-model accuracy was computed.
+k = 1 and k = 3 match the top-1 and top-3 fields in the eval JSON.
 
-## Train and evaluate
+![Printed training loss](docs/img/train-loss.png)
+
+mlx-lm printed 310 training losses and 8 validation losses. The first printed training loss is 1.596 at iteration 10. The last is 0.192 at iteration 3095. Printed validation loss starts at 5.077 on iteration 1 and ends at 0.412 on iteration 3095. Those strings are in `results/mlx_train_curve_2018.json`. They are the logger's rounded text, not a higher-precision loss.
+
+![Confusion among the six largest 2018 accounts](docs/img/confusion.png)
+
+The six accounts with the most 2018 labels, and how often the 1.5B model predicted one of those six:
+
+| Booked \ predicted | Travelling Expenses | Catering Supplies | Furniture and Equipment | Publicity and Promotion | Care Payments | Expenses and Allowances | n |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Travelling Expenses | 667 | 0 | 3 | 5 | 46 | 5 | 727 |
+| Catering Supplies | 33 | 524 | 21 | 11 | 10 | 70 | 676 |
+| Furniture and Equipment | 9 | 51 | 246 | 25 | 42 | 18 | 479 |
+| Publicity and Promotion | 4 | 0 | 95 | 105 | 16 | 4 | 251 |
+| Care Payments | 67 | 0 | 39 | 10 | 133 | 0 | 249 |
+| Expenses and Allowances | 75 | 0 | 16 | 16 | 18 | 30 | 176 |
+
+Row totals in the matrix are short of `n` when the prediction was some other account. That happened 144 times. Catering Supplies is mostly kept (524 of 676). Expenses and Allowances is mostly sent to Travelling Expenses (75 of 176). Publicity and Promotion is split with Furniture and Equipment (95 predicted as furniture, 105 kept).
+
+## Where it goes wrong
+
+These three rows are the first match in `card_line_id` order, not a hand-picked sample.
+
+**Correct, new merchant.** `2018-01_f41af6e3.csv:10`. CARREFOUR MARKET ST H, Services to People, Adult Social Care, 14.49 GBP. Booked Expenses and Allowances. MLX predicted Expenses and Allowances. Lookup predicted Travelling Expenses.
+
+**Seen merchant, wrong.** `2018-01_f41af6e3.csv:106`. W M MORRISON PLC, Services to People, Childrens & Educational Services, 10.0 GBP. Booked Furniture and Equipment. MLX predicted Catering Supplies. The booked account was still inside the top 3: Catering Supplies, Office Expenses, Furniture and Equipment. Lookup also predicted Catering Supplies.
+
+**New merchant, wrong.** `2018-01_f41af6e3.csv:109`. PAYPAL  VANESSATREA, Corporate and Support Services, Corporate & Democratic Core, 189.59 GBP. Booked Furniture and Equipment. MLX predicted Publicity and Promotion. Top 3 was Publicity and Promotion, Expenses and Allowances, Staff Training. The booked account was not in that list. Lookup predicted Expenses and Allowances.
+
+## Reproduce
+
+CPU fold, measured on Linux-6.12.113+-x86_64, 4 cores, 15.63 GB RAM, no GPU, torch 2.15.0+cpu. Training is `results/adapters/fold_2018/train_manifest.json`: 4060.1 seconds, 0.762 examples/s, mean token loss 0.275091, 8,798,208 trainable parameters of 502,830,976, rank 16, alpha 32, dropout 0.05, one epoch, 387 optimizer steps. Scoring from the eval JSON `seconds` fields: zero-shot 2020.1 s (0.596 s/example), 4-shot 2814.7 s (0.831 s/example), LoRA 2130.2 s (0.629 s/example).
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python scripts/prepare_data.py --check
 python scripts/run_baselines.py
-pytest
-```
-
-The CPU run that produced the fold-2018 adapter, on a 4-core machine with no GPU:
-
-```bash
 python scripts/train_lora.py --config configs/cpu_fold2018.json
 python scripts/evaluate.py --config configs/eval_zeroshot_2018.json
 python scripts/evaluate.py --config configs/eval_fewshot_2018.json
 python scripts/evaluate.py --config configs/eval_lora_2018.json
 ```
 
-LoRA settings in that config: rank 16, alpha 32, dropout 0.05, all Qwen linear modules, AdamW, learning rate 2e-4, one epoch, batch size 1, gradient accumulation 8, seed 0, float32. Evaluation appends to `results/predictions/<tag>.jsonl` and can be resumed with the same config. A partial file is `complete: false` and is not a full-fold result.
+M2 MacBook Air, 8GB unified memory, fanless, macOS-27.2-arm64, 8 CPU cores. The eval JSON records `ram_gb_memtotal` as null and `gpu` as null because the hardware helper reads `/proc/meminfo` and torch. This run was on AC power. `mlx-lm` Version: 0.32.2. Model `mlx-community/Qwen2.5-1.5B-Instruct-4bit`, batch size 1, rank 8, last 8 attention projections, max sequence length 256, 3,095 steps.
 
-### Full rolling run on a rented GPU
-
-Not run here. Install a CUDA build of PyTorch, then `pip install -r requirements-gpu.txt` and `pip install bitsandbytes`. QLoRA (NF4, double quant) is selected automatically when both CUDA and bitsandbytes import.
-
-```bash
-python scripts/train_lora.py --config configs/gpu_rolling.json
-python scripts/evaluate.py --config configs/gpu_eval_rolling.json
-```
-
-That trains two epochs on each of the five folds, into `results/adapters_rolling/`. Record `seconds` from each `train_manifest.json` and multiply by the host's hourly price. This repository does not estimate that product.
-
-### MLX on an M2 MacBook Air (8GB, fanless)
-
-Run on this Mac. The measured fold-2018 row is above: model `mlx-community/Qwen2.5-1.5B-Instruct-4bit`, top-1 0.5674638322999704, top-3 0.7753173900206672, new-merchant top-1 0.28398058252427183, train wall clock 2153 seconds, score time 38911.2 seconds, peak sampled footprint 6181 MB. The numbers are copied from `results/eval_mlx_2018.json` and from the training-log timestamps and `footprint` samples named in that row.
-
-The path is QLoRA in the sense MLX-LM uses: a 4-bit `mlx-community` base plus a LoRA adapter (`mlx_lm.lora`). The training rows are the same TrustGate fold as the PyTorch run. Fold 2018 trains on all 3,095 lines from 2017 and scores all 3,387 lines from 2018. Ranking is mean token log-probability over the training-year account list, with the same top-1, top-3, new-merchant, and bootstrap fields as `results/eval_qwen05_lora_2018.json`. `valid.jsonl` is 128 of those training rows copied out so mlx-lm can print a validation loss. They are not removed from `train.jsonl`, and the test year is in neither file. Do not quote that validation loss as the result.
-
-Checked earlier on Linux: the JSONL export (3,095 train rows, no 2018 ids), the YAML (batch 1, 8 LoRA layers, rank 8, sequence length 256, gradient checkpointing, prompt masking), the out-of-memory detector, and the log-probability arithmetic. This Mac then loaded MLX, trained the 1.5B adapter, and scored the fold. The 1.5B run did not hit the out-of-memory fallback.
-
-Use Python 3.11 or 3.12. The system Python on macOS is often 3.9, which is too old. This command is the one to run on the Air:
+Train wall clock is the training log's lifetime, 2026-11-11T19:00:36-0500 through 2026-11-11T19:36:29-0500, which is 2153 seconds. Score time is `seconds` in `results/eval_mlx_2018.json`: 38911.2 (11.488 seconds/example). Peak memory is the maximum `footprint` sample of the train and score processes, taken every 20 seconds: 6181 MB at 2026-11-12T03:43:27Z, during scoring.
 
 ```bash
 python3.12 --version
 PYTHON=python3.12 make mlx
 ```
 
-`make mlx` creates `.venv-mlx`, installs `requirements-mlx.txt`, exports `data/mlx/fold_2018`, trains, and writes `results/eval_mlx_2018.json`. If the 1.5B model dies with an out-of-memory error, the same command retries `mlx-community/Qwen2.5-0.5B-Instruct-4bit` and records `fallback_from` in that JSON. All five test years:
+Charts need matplotlib on the interpreter you point at:
 
 ```bash
-PYTHON=python3.12 make mlx-rolling
+python3.12 -m pip install matplotlib
+PYTHON=python3.12 make figures
 ```
 
-That trains five adapters (3,095 + 6,482 + 9,864 + 12,007 + 13,917 steps at batch size 1) and writes `results/eval_mlx_2018_2019_2020_2021_2022.json`.
+On this Mac, matplotlib 3.11.2 was installed in `.venv-mlx`, and `PYTHON=.venv-mlx/bin/python make figures` wrote `docs/img/`.
 
-Defaults, in `configs/mlx_m2_8gb.yaml`: `mlx-community/Qwen2.5-1.5B-Instruct-4bit`, batch size 1, gradient checkpointing, max sequence length 256, LoRA on the last 8 attention projections (`q`, `k`, `v`, `o`) at rank 8, AdamW, learning rate 1e-4, one pass over the training rows, seed 0. With the Qwen2.5 tokenizer on this machine, the longest training chat across all five folds is 199 tokens (186 tokens for 2017 alone), so 256 does not cut off the account name. The export script checks that again when `transformers` is installed and refuses to train if a chat would be truncated. `requirements-mlx.txt` pins `mlx-lm[train]==0.32.2`. This Mac installed that pin. The run printed `mlx-lm Version: 0.32.2`.
+## Limitations
 
-The Air is fanless. After a few minutes the chassis warms up and Metal slows down. This run was on AC power. A partial `results/predictions/mlx_*.jsonl` resumes. Train wall clock and score time for the completed run are in the measured row above. The result JSON's `seconds` field is the scoring time, 38911.2. The training log under `results/mlx_fold_*.log` is gitignored; its file lifetime is the 2153-second train wall clock.
+- One language-model fold. The five-year rolling language-model run was not executed. Pooled classical numbers in `results/baselines.json` cover 11,756 lines and are a different population from this table.
+- The 1.5B QLoRA top-1 does not clear merchant lookup or the 0.5B LoRA. The top-1 intervals for 1.5B and lookup overlap.
+- Fold-2018 TF-IDF has no bootstrap interval in `results/baselines.json`.
+- Prediction files store three names. There is no measured top-k for k greater than 3.
+- The MLX validation loss is not a test score. `format_check.n` in the MLX JSON is 0. Free generation was not run for that model.
+- Peak memory is a 20-second sample of process footprint, not a device-wide counter and not a torch peak-allocated figure. The JSON does not contain it.
+- Training loss in the chart is the text mlx-lm printed.
+- Dollar cost was not measured.
+- The label ceiling on card-feed inputs, recomputed in `results/baselines.json`, is 0.8608174533701434. The same inputs were not always booked to the same account.
+- QLoRA on CUDA was not run. This Air has no CUDA device.
 
-## Data
-
-Stockport Metropolitan Borough Council purchase-card transactions, data.gov.uk dataset `purchase-card-transactions`, Open Government Licence v3.0. Contains public sector information licensed under the Open Government Licence v3.0.
-
-The purpose map in `data/stockport_purpose_map.csv` is the reviewed seed from TrustGate (MIT). It collapses 61 raw purpose strings to 21 accounts. The reference export is from JudgeGate commit `ff0b8f6b8d3ec119c3f3d2131dc1e8a8b190bb4e`, file `data/stockport_labelled_lines.csv.gz`, SHA-256 `d202870296c57f95014b9f6ad09bc5bc2b3ca68180eaafb37aad3bbc51d3e37b`.
-
-## Layout
+## Repo map
 
 | Path | Role |
 |---|---|
-| `scripts/prepare_data.py` | Check the export, or download and rebuild it |
-| `scripts/run_baselines.py` | Majority, merchant lookup, merchant top-3, TF-IDF logistic regression |
-| `scripts/train_lora.py` | LoRA, or QLoRA when CUDA and bitsandbytes are available |
-| `scripts/evaluate.py` | Closed-set log-probability ranking, with a paired merchant lookup |
-| `scripts/run_mlx.sh` | Mac-only MLX setup, QLoRA train, and the same scoring protocol |
-| `make mlx` | Fold 2018 on an M2 Air. `make mlx-rolling` is all five years |
-| `glcode/` | The library those scripts call |
-| `results/baselines.json` | Recomputed classical metrics |
+| `glcode/` | Split, prompts, metrics, MLX export and scoring |
+| `scripts/train_lora.py` | CPU LoRA |
+| `scripts/evaluate.py` | Closed-set log-probability ranking |
+| `scripts/run_mlx.sh` | Mac QLoRA train and score |
+| `scripts/make_figures.py` | Charts in `docs/img/` |
+| `configs/cpu_fold2018.json` | The measured 0.5B CPU run |
+| `configs/mlx_m2_8gb.yaml` | The 8GB QLoRA defaults |
+| `results/eval_*_2018.json` | Measured fold-2018 scores |
+| `results/baselines.json` | Classical baselines |
+| `results/mlx_train_curve_2018.json` | Losses mlx-lm printed |
+| `data/reference/stockport_labelled_lines.csv.gz` | The labelled export |
 
-## License
+## Citation
 
-Code: MIT. Data: Open Government Licence v3.0, with the attribution above.
+Stockport Metropolitan Borough Council purchase-card transactions, data.gov.uk dataset `purchase-card-transactions`, Open Government Licence v3.0. Contains public sector information licensed under the Open Government Licence v3.0.
+
+The purpose map is the reviewed TrustGate seed. TrustGate: [https://github.com/VijayChamakuri/trustgate](https://github.com/VijayChamakuri/trustgate). The labelled export matches JudgeGate commit `ff0b8f6b8d3ec119c3f3d2131dc1e8a8b190bb4e`, file `data/stockport_labelled_lines.csv.gz`, SHA-256 `d202870296c57f95014b9f6ad09bc5bc2b3ca68180eaafb37aad3bbc51d3e37b`.
+
+Language-model bases: `Qwen/Qwen2.5-0.5B-Instruct` and `mlx-community/Qwen2.5-1.5B-Instruct-4bit`. This repository is MIT, copyright 2026 Vijay Chamakuri.
