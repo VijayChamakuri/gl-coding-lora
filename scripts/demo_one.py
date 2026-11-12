@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+"""Score one 2018 purchase with the local 4-bit adapter.
+
+The adapter is produced by `make mlx` and is not committed. This script
+prints the live ranking. It does not write a result file.
+"""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+CARD_ID = "2018-01_f41af6e3.csv:10"
+MODEL = "mlx-community/Qwen2.5-1.5B-Instruct-4bit"
+ADAPTER = Path("results/mlx_adapters/active/fold_2018")
+
+
+def main() -> None:
+    weights = ADAPTER / "adapters.safetensors"
+    if not weights.exists():
+        raise SystemExit(f"missing adapter weights at {weights}. Run make mlx first.")
+    from mlx_lm import load
+
+    from glcode.dataset import candidate_accounts, iter_folds, load_lines
+    from glcode.metrics import rank_labels
+    from glcode.mlx_eval import score_labels
+    from glcode.prompts import user_message
+
+    df = load_lines()
+    train = test = None
+    for year, train_fold, test_fold in iter_folds(df):
+        if year == 2018:
+            train, test = train_fold, test_fold
+            break
+    if test is None:
+        raise SystemExit("2018 fold was not found")
+    row = test[test.card_line_id == CARD_ID]
+    if row.empty:
+        raise SystemExit(f"{CARD_ID} is not in the 2018 fold")
+    item = row.iloc[0]
+    accounts = candidate_accounts(train)
+    prompt = user_message(item, accounts)
+    print(prompt)
+    print("---")
+    model, tokenizer = load(MODEL, adapter_path=str(ADAPTER))
+    sums, means = score_labels(model, tokenizer, prompt, accounts)
+    ranked = rank_labels(accounts, means, sums)
+    print(f"card_line_id: {item.card_line_id}")
+    print(f"booked: {item.gl_account}")
+    print("top3: " + " | ".join(ranked["top3"]))
+    print(f"top1: {ranked['pred']}")
+
+
+if __name__ == "__main__":
+    main()

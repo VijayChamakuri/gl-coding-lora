@@ -28,10 +28,17 @@ REFERENCE = ROOT / "data" / "reference" / "stockport_labelled_lines.csv.gz"
 TRAIN_LOG = RESULTS / "mlx_fold_2018_qwen25-15b-instruct-4bit.log"
 TRAIN_CURVE = RESULTS / "mlx_train_curve_2018.json"
 
-NAVY = "#1f4e79"
-CLAY = "#b8612e"
+ACCENT = "#0f766e"
+ACCENT_SOFT = "#5eead4"
+GREY = "#a8a29e"
+GREY_DARK = "#57534e"
+GREY_LIGHT = "#d6d3d1"
 INK = "#1c1917"
+PAPER = "#fafaf9"
 GRID = "#e7e5e4"
+HEADLINE = "LoRA 0.5B CPU"
+NAVY = ACCENT
+CLAY = GREY_DARK
 
 
 def load_json(path: Path) -> dict:
@@ -93,6 +100,17 @@ def parse_train_log(path: Path) -> dict:
         "log_birth_ns": stat.st_birthtime,
         "log_mtime_ns": stat.st_mtime,
     }
+
+
+def is_headline(label: str) -> bool:
+    return label == HEADLINE
+
+
+def pct(value: float) -> str:
+    from decimal import Decimal, ROUND_HALF_UP
+
+    quant = (Decimal(str(value)) * Decimal(100)).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+    return f"{quant}%"
 
 
 def style(ax) -> None:
@@ -171,7 +189,8 @@ def chart_top1(rows: list[dict]) -> None:
     style(ax)
     xs = list(range(len(rows)))
     heights = [row["top1"] for row in rows]
-    ax.bar(xs, heights, color=NAVY, width=0.72, zorder=2)
+    colors = [ACCENT if is_headline(row["label"]) else GREY for row in rows]
+    ax.bar(xs, heights, color=colors, width=0.72, zorder=2)
     err_x, err_y, err_low, err_high = [], [], [], []
     for x, row in zip(xs, rows):
         if not row["top1_ci"]:
@@ -204,8 +223,10 @@ def chart_new_seen(rows: list[dict]) -> None:
     style(ax)
     xs = list(range(len(usable)))
     width = 0.36
-    ax.bar([x - width / 2 for x in xs], [row["top1_seen"] for row in usable], width=width, color=NAVY, label="Seen merchant")
-    ax.bar([x + width / 2 for x in xs], [row["top1_new"] for row in usable], width=width, color=CLAY, label="New merchant")
+    seen_colors = [ACCENT if is_headline(row["label"]) else GREY_DARK for row in usable]
+    new_colors = [ACCENT_SOFT if is_headline(row["label"]) else GREY_LIGHT for row in usable]
+    ax.bar([x - width / 2 for x in xs], [row["top1_seen"] for row in usable], width=width, color=seen_colors, label="Seen merchant")
+    ax.bar([x + width / 2 for x in xs], [row["top1_new"] for row in usable], width=width, color=new_colors, label="New merchant")
     ax.set_xticks(xs, [row["label"] for row in usable], rotation=18, ha="right")
     ax.set_ylim(0, 1)
     ax.set_ylabel("Top-1")
@@ -235,8 +256,12 @@ def chart_topk() -> dict:
     }
     fig, ax = plt.subplots(figsize=(6.4, 4.2))
     style(ax)
-    colors = [NAVY, "#5b7c99", CLAY, "#7c2d12"]
-    for (label, rates), color in zip(series.items(), colors):
+    greys = ["#78716c", "#a8a29e", "#d6d3d1"]
+    grey_i = 0
+    for label, rates in series.items():
+        color = ACCENT if is_headline(label) else greys[grey_i]
+        if not is_headline(label):
+            grey_i += 1
         ax.plot([1, 2, 3], [rates[1], rates[2], rates[3]], marker="o", color=color, label=label)
     ax.set_xticks([1, 2, 3])
     ax.set_ylim(0, 1)
@@ -253,12 +278,12 @@ def chart_loss(curve: dict) -> None:
     losses = [float(point["train_loss_printed"]) for point in curve["train_points"]]
     fig, ax = plt.subplots(figsize=(7.2, 4.2))
     style(ax)
-    ax.plot(iters, losses, color=NAVY, linewidth=1.4)
+    ax.plot(iters, losses, color=GREY_DARK, linewidth=1.4)
     if curve["val_points"]:
         ax.scatter(
             [point["iter"] for point in curve["val_points"]],
             [float(point["val_loss_printed"]) for point in curve["val_points"]],
-            color=CLAY,
+            color=GREY,
             s=28,
             zorder=3,
             label="Printed validation loss",
@@ -285,7 +310,7 @@ def chart_confusion() -> dict:
             continue
         matrix[index[row["y"]]][index[row["pred"]]] += 1
     fig, ax = plt.subplots(figsize=(7.6, 6.2))
-    ax.imshow(matrix, cmap="Blues")
+    ax.imshow(matrix, cmap="Greys")
     ax.set_xticks(range(len(labels)), labels, rotation=30, ha="right", fontsize=8)
     ax.set_yticks(range(len(labels)), labels, fontsize=8)
     ax.set_xlabel("Predicted")
@@ -335,10 +360,212 @@ def examples() -> list[dict]:
     return picked
 
 
+def short_label(label: str) -> str:
+    return {
+        "Zero-shot 0.5B": "Zero-shot",
+        "4-shot 0.5B": "4 examples",
+        "LoRA 0.5B CPU": "LoRA 0.5B",
+        "LoRA 1.5B MLX": "LoRA 1.5B, 4-bit",
+        "Merchant lookup": "Merchant lookup",
+        "TF-IDF 2018": "TF-IDF",
+    }.get(label, label)
+
+
+def chart_scoreboard(rows: list[dict]) -> None:
+    fig, axes = plt.subplots(1, 2, figsize=(11.2, 4.6), facecolor="white")
+    panels = (("top1", "Top-1, same 3,387 lines"), ("top1_new", "New merchants only"))
+    for ax, (key, title) in zip(axes, panels):
+        style(ax)
+        ordered = list(reversed(rows))
+        ys = list(range(len(ordered)))
+        colors = [ACCENT if is_headline(row["label"]) else GREY for row in ordered]
+        ax.barh(ys, [row[key] * 100 for row in ordered], color=colors, height=0.72)
+        ax.set_yticks(ys, [short_label(row["label"]) for row in ordered])
+        ax.set_xlim(0, 100)
+        ax.set_xlabel("Percent")
+        ax.set_title(title)
+        for y, row in zip(ys, ordered):
+            ax.text(row[key] * 100 + 1.2, y, pct(row[key]), va="center", fontsize=8, color=INK)
+    fig.tight_layout()
+    save(fig, "scoreboard.png")
+
+
+def chart_progression(rows: list[dict]) -> None:
+    wanted = ["Zero-shot 0.5B", "4-shot 0.5B", "LoRA 0.5B CPU"]
+    picked = [next(row for row in rows if row["label"] == name) for name in wanted]
+    fig, ax = plt.subplots(figsize=(7.2, 4.2))
+    style(ax)
+    xs = list(range(len(picked)))
+    ax.bar(xs, [row["top1"] * 100 for row in picked], color=[GREY, GREY_DARK, ACCENT], width=0.68)
+    ax.set_xticks(xs, [short_label(row["label"]) for row in picked])
+    ax.set_ylim(0, 100)
+    ax.set_ylabel("Top-1 percent")
+    ax.set_title("Same 0.5B model: no examples, four examples, then LoRA")
+    for x, row in zip(xs, picked):
+        ax.text(x, row["top1"] * 100 + 2, pct(row["top1"]), ha="center", fontsize=10, color=INK)
+    save(fig, "progression.png")
+
+
+def _tile(fig, x, y, w, h, value, caption) -> None:
+    box = plt.Rectangle((x, y), w, h, transform=fig.transFigure, facecolor="white", edgecolor=GREY_LIGHT, linewidth=1.2, zorder=2)
+    fig.patches.append(box)
+    fig.text(x + 0.02, y + h * 0.58, value, fontsize=14, color=ACCENT, fontweight="bold", zorder=3)
+    fig.text(x + 0.02, y + h * 0.22, caption, fontsize=8, color=GREY_DARK, zorder=3)
+
+
+def chart_hero(rows: list[dict]) -> None:
+    import subprocess
+
+    lora = next(row for row in rows if is_headline(row["label"]))
+    lookup = next(row for row in rows if row["label"] == "Merchant lookup")
+    fig = plt.figure(figsize=(12.2, 3.8), facecolor=PAPER)
+    fig.text(0.05, 0.74, "GL-LoRA", fontsize=32, color=INK, fontweight="bold")
+    fig.text(0.05, 0.58, "Which account should this card purchase hit?", fontsize=14, color=GREY_DARK)
+    _tile(fig, 0.05, 0.12, 0.28, 0.34, f"{pct(lora['top1_new'])} vs {pct(lookup['top1_new'])}", "New merchants, LoRA vs lookup")
+    mem = int(subprocess.check_output(["sysctl", "-n", "hw.memsize"], text=True).strip())
+    model = subprocess.check_output(["sysctl", "-n", "hw.model"], text=True).strip()
+    brand = subprocess.check_output(["sysctl", "-n", "machdep.cpu.brand_string"], text=True).strip()
+    if mem == 8 * 1024**3 and model == "Mac14,2" and brand == "Apple M2":
+        _tile(fig, 0.36, 0.12, 0.28, 0.34, "8GB M2 Air", "This Mac, model Mac14,2")
+    _tile(fig, 0.67, 0.12, 0.28, 0.34, f"{lora['n']:,}", "2018 card lines scored")
+    save(fig, "hero.png")
+
+
+def chart_flow() -> None:
+    report = load_json(RESULTS / "eval_mlx_2018.json")
+    prompt = report["example_prompt"]
+    picked = examples()[0]
+    accounts = [line[2:] for line in prompt.splitlines() if line.startswith("- ")]
+    fig = plt.figure(figsize=(12.2, 5.1), facecolor=PAPER)
+    fig.text(0.04, 0.94, "One real purchase", fontsize=16, color=INK, fontweight="bold")
+    fig.text(0.04, 0.86, "The card line", fontsize=11, color=ACCENT, fontweight="bold")
+    fig.text(
+        0.04,
+        0.80,
+        f"Merchant: {picked['merchant_raw']}\nDepartment: {picked['department']}\nService: {picked['service_category']}\nAmount GBP: {picked['amount']}",
+        fontsize=9,
+        color=INK,
+        va="top",
+        family="monospace",
+    )
+    fig.text(0.38, 0.86, "Account list in the prompt", fontsize=11, color=ACCENT, fontweight="bold")
+    fig.text(0.38, 0.80, "\n".join(accounts), fontsize=8, color=INK, va="top", family="monospace", linespacing=1.25)
+    fig.text(0.70, 0.86, "Saved top 3", fontsize=11, color=ACCENT, fontweight="bold")
+    y = 0.78
+    for i, name in enumerate(picked["top3"], start=1):
+        booked = name == picked["y"]
+        fig.text(
+            0.70,
+            y,
+            f"{i}. {name}",
+            fontsize=9,
+            color="white" if booked else INK,
+            va="top",
+            family="monospace",
+            bbox=dict(boxstyle="square,pad=0.35", facecolor=ACCENT, edgecolor="none") if booked else None,
+        )
+        y -= 0.07
+    fig.text(0.04, 0.04, "Numeric scores for each account were not stored. The teal row is the booked account.", fontsize=8, color=GREY_DARK)
+    save(fig, "flow.png")
+
+
+def chart_badges() -> None:
+    import subprocess
+
+    labels = ["Python", "MLX", "Qwen2.5", "MIT"]
+    mem = int(subprocess.check_output(["sysctl", "-n", "hw.memsize"], text=True).strip())
+    model = subprocess.check_output(["sysctl", "-n", "hw.model"], text=True).strip()
+    brand = subprocess.check_output(["sysctl", "-n", "machdep.cpu.brand_string"], text=True).strip()
+    if mem == 8 * 1024**3 and model == "Mac14,2" and brand == "Apple M2":
+        labels.append("8GB M2")
+    fig = plt.figure(figsize=(10.5, 0.72), facecolor=PAPER)
+    for i, label in enumerate(labels):
+        x = 0.02 + i * 0.19
+        box = plt.Rectangle((x, 0.18), 0.17, 0.64, transform=fig.transFigure, facecolor=ACCENT, zorder=2)
+        fig.patches.append(box)
+        fig.text(x + 0.085, 0.5, label, ha="center", va="center", color="white", fontsize=10, fontweight="bold", zorder=3)
+    save(fig, "badges.png")
+
+
+def chart_errors() -> None:
+    cards = examples()
+    styles = [
+        ("#166534", "Correct"),
+        ("#a16207", "Wrong, but the booked account is in the top 3"),
+        ("#b91c1c", "Wrong, and the booked account is outside the top 3"),
+    ]
+    fig = plt.figure(figsize=(12.2, 3.5), facecolor=PAPER)
+    for i, (item, (color, verdict)) in enumerate(zip(cards, styles)):
+        x = 0.03 + i * 0.32
+        box = plt.Rectangle((x, 0.06), 0.30, 0.88, transform=fig.transFigure, facecolor="white", edgecolor=color, linewidth=2, zorder=2)
+        fig.patches.append(box)
+        body = (
+            f"{verdict}\n\n"
+            f"{item['merchant_raw']}\n"
+            f"{item['department']}\n"
+            f"{item['service_category']}\n"
+            f"GBP {item['amount']}\n\n"
+            f"Booked: {item['y']}\n"
+            f"Model: {item['pred']}\n"
+            f"Lookup: {item['lookup']}"
+        )
+        fig.text(x + 0.015, 0.84, body, fontsize=8, color=INK, va="top", zorder=3)
+    save(fig, "error-cards.png")
+
+
+def laptop_facts() -> dict:
+    report = load_json(RESULTS / "eval_mlx_2018.json")
+    facts = {
+        "score_seconds": report["seconds"],
+        "seconds_per_example": report["seconds_per_example"],
+        "train_seconds": None,
+        "peak_footprint_mb": None,
+    }
+    if TRAIN_LOG.exists():
+        stat = TRAIN_LOG.stat()
+        facts["train_seconds"] = round(stat.st_mtime - stat.st_birthtime, 1)
+    peak_path = Path("/tmp/mlx-run/footprint-peak.txt")
+    if peak_path.exists():
+        for line in peak_path.read_text().splitlines():
+            if line.startswith("peak_footprint_mb="):
+                facts["peak_footprint_mb"] = line.split("=", 1)[1]
+    return facts
+
+
+def chart_laptop(facts: dict) -> None:
+    fig = plt.figure(figsize=(12.2, 3.2), facecolor=PAPER)
+    fig.text(0.04, 0.82, "The 4-bit run on this Mac", fontsize=16, color=INK, fontweight="bold")
+    tiles = []
+    if facts["train_seconds"] is not None:
+        tiles.append((str(facts["train_seconds"]), "Train seconds, log file lifetime"))
+    if facts["peak_footprint_mb"] is not None:
+        tiles.append((f"{facts['peak_footprint_mb']} MB", "Peak sampled footprint"))
+    if facts["seconds_per_example"] is not None:
+        tiles.append((str(facts["seconds_per_example"]), "Seconds per scored line"))
+    for i, (value, caption) in enumerate(tiles):
+        _tile(fig, 0.04 + i * 0.32, 0.16, 0.28, 0.48, value, caption)
+    save(fig, "laptop.png")
+
+
 def main() -> None:
     rows = fold_models()
+    for row in rows:
+        ci = row["top1_ci"]
+        ci_text = "none stored" if not ci else f"{pct(ci[0])}–{pct(ci[1])}"
+        new_ci = row["top1_new_ci"]
+        new_text = "none stored" if not new_ci else f"{pct(new_ci[0])}–{pct(new_ci[1])}"
+        print(f"PCT {row['label']} top1={pct(row['top1'])} ({ci_text}) new={pct(row['top1_new'])} ({new_text})")
     chart_top1(rows)
     chart_new_seen(rows)
+    chart_scoreboard(rows)
+    chart_progression(rows)
+    chart_hero(rows)
+    chart_badges()
+    chart_flow()
+    chart_errors()
+    facts = laptop_facts()
+    chart_laptop(facts)
+    print("LAPTOP", facts)
     topk = chart_topk()
     if TRAIN_LOG.exists():
         curve = parse_train_log(TRAIN_LOG)
@@ -360,6 +587,7 @@ def main() -> None:
         "predicted_outside_these_six": confusion["predicted_outside_these_six"],
         "support": confusion["support"],
         "examples": examples(),
+        "laptop": facts,
         "train_curve_points": None if not curve else len(curve["train_points"]),
         "train_curve_first": None if not curve else curve["train_points"][:2],
         "train_curve_last": None if not curve else curve["train_points"][-2:],

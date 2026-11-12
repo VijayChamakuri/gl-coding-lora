@@ -1,4 +1,4 @@
-.PHONY: check baselines test train-cpu eval-cpu mlx mlx-rolling mlx-export figures
+.PHONY: check baselines test train-cpu eval-cpu mlx mlx-rolling mlx-export figures demo
 
 PYTHON ?= python3
 
@@ -32,6 +32,10 @@ mlx-rolling:
 mlx-export:
 	PYTHON="$(PYTHON)" bash scripts/run_mlx.sh --export-only
 
-# Charts in docs/img from results/*.json and the prediction JSONL files.
+# Charts in docs/img. Reads result JSON, prediction JSONL, and the training log when present.
 figures:
 	$(PYTHON) scripts/make_figures.py
+
+# One 2018 purchase through the local 4-bit adapter. The weights are not in git.
+demo:
+	.venv-mlx/bin/python scripts/demo_one.py
